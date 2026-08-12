@@ -11,6 +11,7 @@ import glob
 import os
 import random
 import re
+import sys
 import time as _time
 from typing import Union
 
@@ -336,7 +337,7 @@ async def _direct_ytdlp_download(video_id: str, media_type: str) -> str | None:
     link = f"https://www.youtube.com/watch?v={video_id}"
 
     cmd = [
-        "yt-dlp",
+        sys.executable, "-m", "yt_dlp",
         "--js-runtimes", "node",
         "-N", "4",
         "--buffer-size", "16k",
@@ -680,7 +681,7 @@ class YouTube:
             link = self.base + link
         link = _normalize_youtube_link(link)
         proc = await asyncio.create_subprocess_exec(
-            "yt-dlp", "--js-runtimes", "node", "-g",
+            sys.executable, "-m", "yt_dlp", "--js-runtimes", "node", "-g",
             "-f", "best[height<=?720][width<=?1280]", link,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,

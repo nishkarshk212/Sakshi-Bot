@@ -12,6 +12,14 @@ import pyrogram.errors as _pg_errors
 
 from ishu import config, logger, app, db, userbot
 
+try:
+    from ishu.core.supabase_cdn import restore_from_supabase, upload_to_supabase
+except Exception:
+    async def restore_from_supabase(video_id: str, target_path: str, is_video: bool = False) -> bool:
+        return False
+    async def upload_to_supabase(file_path: str, video_id: str, is_video: bool = False):
+        return None
+
 # ── Silence pyrogram.client FileReferenceExpired noise ────────────────────────
 # pyrogram logs this at ERROR level internally before our except block catches
 # it. Filtering it here keeps logs clean without losing real errors.
@@ -113,28 +121,44 @@ class HybridCacheManager:
                 asyncio.create_task(db.update_music_stats(video_id, is_video))
                 return local_path
 
-            # WARM CACHE — restore from Telegram dump channel
-            logger.info(
-                "[WARM CACHE RESTORE] Local SSD missing for %s. Restoring from Telegram dump...",
-                video_id,
-            )
+            # WARM CACHE — restore from Supabase CDN FIRST (1-2s HTTP GET), then Telegram dump
+            logger.info("[WARM CACHE RESTORE] Local SSD missing for %s. Restoring via Supabase CDN...", video_id)
+            try:
+                if await restore_from_supabase(video_id, local_path, is_video):
+                    logger.info("[SUPABASE CDN RESTORE HIT] %s restored in <2s!", video_id)
+                    asyncio.create_task(db.update_music_stats(video_id, is_video))
+                    asyncio.create_task(self.enforce_lru_eviction())
+                    return local_path
+            except Exception as se:
+                logger.warning("Supabase CDN restore error: %s", se)
+
+            # Fallback: Restore from Telegram dump channel if Supabase misses
+            logger.info("[TELEGRAM RESTORE FALLBACK] Restoring %s from Telegram dump...", video_id)
             restored = await self._restore_from_telegram(doc, local_path)
             if restored:
                 asyncio.create_task(db.update_music_stats(video_id, is_video))
                 asyncio.create_task(self.enforce_lru_eviction())
                 return local_path
             else:
-                # Both file_id and message_id failed — self-heal by deleting
-                # the stale document so Step 2 does a clean cold download.
+                # Both Telegram dump and Supabase CDN failed — self-heal MongoDB
                 logger.warning(
-                    "[WARM CACHE FAIL] All restore attempts exhausted for %s. "
+                    "[WARM CACHE FAIL] All restore attempts (Telegram + Supabase CDN) exhausted for %s. "
                     "Deleting stale MongoDB record → will re-download and re-upload.",
                     video_id,
                 )
                 asyncio.create_task(db.delete_music_cache(video_id, is_video))
                 warm_restore_failed = True
 
-        # ── Step 2: Cold Cache — download from YouTube ───────────────────────
+        # ── Step 2: Check Supabase CDN Cluster if unindexed ──────────────────
+        try:
+            if await restore_from_supabase(video_id, local_path, is_video):
+                asyncio.create_task(db.update_music_stats(video_id, is_video))
+                asyncio.create_task(self.enforce_lru_eviction())
+                return local_path
+        except Exception:
+            pass
+
+        # ── Step 3: Cold Cache — download from YouTube ───────────────────────
         lock = get_video_lock(video_id)
         async with lock:
             try:
@@ -150,6 +174,12 @@ class HybridCacheManager:
                         if restored:
                             asyncio.create_task(db.update_music_stats(video_id, is_video))
                             return local_path
+                        try:
+                            if await restore_from_supabase(video_id, local_path, is_video):
+                                asyncio.create_task(db.update_music_stats(video_id, is_video))
+                                return local_path
+                        except Exception:
+                            pass
                         # Same self-heal for the inner re-check path
                         asyncio.create_task(db.delete_music_cache(video_id, is_video))
 
@@ -169,6 +199,12 @@ class HybridCacheManager:
 
                 # Upload MP3/MP4 to Telegram Dump Channel as permanent backup
                 dump_meta = await self._upload_to_telegram_dump(dl_result, video_id, title, is_video)
+
+                # Background upload to 10-Node Supabase CDN Cluster
+                try:
+                    asyncio.create_task(upload_to_supabase(dl_result, video_id, is_video))
+                except Exception as e:
+                    logger.warning("Supabase background task error: %s", e)
 
                 # Persist metadata to MongoDB (single source of truth)
                 channel_id = getattr(config, "STORAGE_GROUP_ID", 0) or getattr(config, "LOGGER_ID", 0)
@@ -235,7 +271,12 @@ class HybridCacheManager:
                     logger.warning("Failed to persist refreshed file_id for %s: %s", video_id, pe)
 
         async def _download_via_message(client, ch_id: int, msg_id: int, label: str) -> bool:
-            """Fetch message → download media → return True on success."""
+            """Fetch message → download media → return True on success.
+
+            Includes a stale file_reference self-heal: if download_media returns
+            None (stale reference that didn't raise FileReferenceExpired), re-fetch
+            the message once to force Telegram to refresh the reference, then retry.
+            """
             try:
                 msg = await client.get_messages(ch_id, msg_id)
                 if msg and not getattr(msg, "empty", True) and (msg.audio or msg.video or msg.document):
@@ -244,6 +285,22 @@ class HybridCacheManager:
                         asyncio.create_task(_persist(label, msg))
                         logger.info("Restored %s via %s.", video_id, label)
                         return True
+                    # download_media returned None — stale file_reference.
+                    # Re-fetch the message to force Telegram to refresh it, then retry.
+                    logger.info(
+                        "[%s] download_media returned None for %s (stale ref). "
+                        "Re-fetching message to refresh...", label, video_id,
+                    )
+                    msg = await client.get_messages(ch_id, msg_id)
+                    if msg and not getattr(msg, "empty", True) and (msg.audio or msg.video or msg.document):
+                        path = await client.download_media(msg, file_name=target_path)
+                        if path and os.path.exists(path) and os.path.getsize(path) > 0:
+                            asyncio.create_task(_persist(label, msg))
+                            logger.info("Restored %s via %s (after ref refresh).", video_id, label)
+                            return True
+                    logger.warning(
+                        "[%s] Still failed after ref refresh for %s.", label, video_id,
+                    )
             except (_pg_errors.ChannelInvalid, _pg_errors.ChannelPrivate):
                 logger.info("[%s] Client not in dump channel (%s) — skipping.", label, ch_id)
             except Exception as e:
@@ -251,12 +308,20 @@ class HybridCacheManager:
             return False
 
         async def _download_via_file_id(client, fid: str, label: str) -> bool:
-            """Download directly by file_id → return True on success."""
+            """Download directly by file_id → return True on success.
+
+            If download_media returns None (stale ref), try refreshing via
+            message_id if available, so we get a fresh file_reference.
+            """
             try:
                 path = await client.download_media(fid, file_name=target_path)
                 if path and os.path.exists(path) and os.path.getsize(path) > 0:
                     logger.info("Restored %s via %s (file_id).", video_id, label)
                     return True
+                # file_id returned None — stale reference without exception.
+                logger.info(
+                    "[%s] file_id download returned None for %s (stale ref).", label, video_id,
+                )
             except _pg_errors.FileReferenceExpired:
                 logger.info(
                     "[%s] file_id reference expired for %s — will try message_id next.",

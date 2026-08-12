@@ -1,3 +1,4 @@
+from ishu.core.redis_manager import redis_db
 # Copyright (c) 2025 AnonymousX1025
 # Licensed under the MIT License.
 # This file is part of AnonXMusic
@@ -11,10 +12,6 @@ from datetime import datetime, timezone
 import certifi
 
 from pymongo import AsyncMongoClient
-try:
-    from mongomock_motor import AsyncMongoMockClient
-except ImportError:
-    AsyncMongoMockClient = None
 
 from ishu import config, logger, userbot
 
@@ -24,33 +21,11 @@ class MongoDB:
         """
         Initialize the MongoDB connection.
         """
-        self.is_mock = False
-        url = config.MONGO_URL or "mongodb://localhost:27017/local"
-        if ("localhost" in url or "127.0.0.1" in url or url in ("local", "", None)) and AsyncMongoMockClient:
-            self.mongo = AsyncMongoMockClient()
-            self.is_mock = True
-        else:
-            try:
-                self.mongo = AsyncMongoClient(url, serverSelectionTimeoutMS=5000, tlsCAFile=certifi.where())
-            except Exception:
-                if AsyncMongoMockClient:
-                    self.mongo = AsyncMongoMockClient()
-                    self.is_mock = True
-                else:
-                    raise
+        self.mongo = AsyncMongoClient(config.MONGO_URL, serverSelectionTimeoutMS=30000, tlsCAFile=certifi.where())
         self.db = self.mongo.Yukki
 
-        storage_url = os.getenv("STORAGE_MONGO_URL") or getattr(config, "STORAGE_MONGO_URL", None) or url
-        if ("localhost" in storage_url or "127.0.0.1" in storage_url or storage_url in ("local", "", None)) and AsyncMongoMockClient:
-            self.storage_mongo = AsyncMongoMockClient()
-        else:
-            try:
-                self.storage_mongo = AsyncMongoClient(storage_url, serverSelectionTimeoutMS=5000, tlsCAFile=certifi.where())
-            except Exception:
-                if AsyncMongoMockClient:
-                    self.storage_mongo = AsyncMongoMockClient()
-                else:
-                    raise
+        storage_url = os.getenv("STORAGE_MONGO_URL") or getattr(config, "STORAGE_MONGO_URL", None) or config.MONGO_URL
+        self.storage_mongo = AsyncMongoClient(storage_url, serverSelectionTimeoutMS=30000, tlsCAFile=certifi.where())
         self.storage_db = self.storage_mongo.SharedStorage
 
         self.admin_list = {}
@@ -85,37 +60,23 @@ class MongoDB:
         self.music_cachedb = self.storage_db.music_cache
 
     async def connect(self) -> None:
-        """Check if we can connect to the database."""
+        """Check if we can connect to the database.
+
+        Raises:
+            SystemExit: If the connection to the database fails.
+        """
         try:
             start = time()
             await self.mongo.admin.command("ping")
             logger.info(f"Database connection successful. ({time() - start:.2f}s)")
+            await redis_db.connect()
+            await self.load_cache()
+            try:
+                await self.music_cachedb.create_index("last_played")
+            except Exception:
+                pass
         except Exception as e:
-            if AsyncMongoMockClient and not self.is_mock:
-                logger.warning(f"Database connection error ({e}), switching to local in-memory MongoDB...")
-                self.mongo = AsyncMongoMockClient()
-                self.db = self.mongo.Yukki
-                self.storage_mongo = AsyncMongoMockClient()
-                self.storage_db = self.storage_mongo.SharedStorage
-                self.song_cachedb = self.db.song_cache
-                self.music_cachedb = self.storage_db.music_cache
-                self.chatsdb = self.db.chats
-                self.usersdb = self.db.users
-                self.langdb = self.db.lang
-                self.authdb = self.db.auth
-                self.assistantdb = self.db.assistant
-                self.cache = self.db.cache
-                self.is_mock = True
-            elif self.is_mock:
-                logger.info("Using local in-memory MongoDB engine.")
-            else:
-                raise SystemExit(f"Database connection failed: {type(e).__name__}") from e
-
-        await self.load_cache()
-        try:
-            await self.music_cachedb.create_index("last_played")
-        except Exception:
-            pass
+            raise SystemExit(f"Database connection failed: {type(e).__name__}") from e
 
     async def close(self) -> None:
         """Close the connection to the database."""
@@ -214,7 +175,12 @@ class MongoDB:
 
     # ULTRA-FAST HYBRID MUSIC CACHE METHODS
     async def get_music_cache(self, video_id: str, is_video: bool = False) -> dict | None:
-        """Get full metadata document for a song from shared MongoDB."""
+        """Get full metadata document for a song from shared Redis/MongoDB."""
+        redis_key = f"song:{video_id}_{'v' if is_video else 'a'}"
+        redis_cached = await redis_db.get_json(redis_key)
+        if redis_cached:
+            logger.info("[REDIS RAM HIT] Ultra-fast <1ms lookup for %s", video_id)
+            return redis_cached
         try:
             key = f"{video_id}_v" if is_video else f"{video_id}_a"
             doc = await self.music_cachedb.find_one({"_id": key})
@@ -284,6 +250,7 @@ class MongoDB:
                 {"$set": doc},
                 upsert=True,
             )
+            asyncio.create_task(redis_db.set_json(f"song:{key}", doc))
             # Dual-write to shared_song_cache for legacy compatibility
             if message_id:
                 asyncio.create_task(self.save_shared_song(video_id, message_id, is_video, title))
@@ -304,59 +271,6 @@ class MongoDB:
             )
         except Exception as e:
             logger.warning("update_music_stats failed for %s: %s", video_id, e)
-
-    async def record_play(self, is_video: bool = False, chat_id: int = 0, user_id: int = 0, video_id: str = "", title: str = "") -> None:
-        """Record a play event in MongoDB for usage stats tracking."""
-        try:
-            doc = {
-                "timestamp": time(),
-                "is_video": bool(is_video),
-                "chat_id": chat_id,
-                "user_id": user_id,
-                "video_id": video_id,
-                "title": title,
-                "created_at": datetime.now(timezone.utc).isoformat(),
-            }
-            await self.db.play_history.insert_one(doc)
-            if video_id:
-                await self.update_music_stats(video_id, is_video=is_video)
-        except Exception as e:
-            logger.warning("record_play failed: %s", e)
-
-    async def get_play_usage_stats(self) -> dict:
-        """Return today's (last 24 hours) and overall play counts broken down by Audio vs Video."""
-        try:
-            now_ts = time()
-            one_day_ago = now_ts - 86400
-
-            today_audio = await self.db.play_history.count_documents({"timestamp": {"$gte": one_day_ago}, "is_video": False})
-            today_video = await self.db.play_history.count_documents({"timestamp": {"$gte": one_day_ago}, "is_video": True})
-
-            overall_audio = await self.db.play_history.count_documents({"is_video": False})
-            overall_video = await self.db.play_history.count_documents({"is_video": True})
-
-            if overall_audio + overall_video == 0:
-                async for doc in self.music_cachedb.find():
-                    pc = doc.get("play_count", 1)
-                    if doc.get("is_video"):
-                        overall_video += pc
-                    else:
-                        overall_audio += pc
-
-            return {
-                "today_audio": today_audio,
-                "today_video": today_video,
-                "today_total": today_audio + today_video,
-                "overall_audio": overall_audio,
-                "overall_video": overall_video,
-                "overall_total": overall_audio + overall_video,
-            }
-        except Exception as e:
-            logger.warning("get_play_usage_stats failed: %s", e)
-            return {
-                "today_audio": 0, "today_video": 0, "today_total": 0,
-                "overall_audio": 0, "overall_video": 0, "overall_total": 0,
-            }
 
     async def update_music_file_id(
         self, video_id: str, file_id: str, file_unique_id: str = "", is_video: bool = False
@@ -574,6 +488,32 @@ class MongoDB:
         await self.chatsdb.update_one(
             {"_id": chat_id},
             {"$set": {"admin_play": not remove}},
+            upsert=True,
+        )
+
+    
+    # SKIP MODE METHODS
+    async def get_skip_mode(self, chat_id: int) -> bool:
+        if not hasattr(self, "admin_skip"):
+            self.admin_skip = []
+        if chat_id not in self.admin_skip:
+            doc = await self.chatsdb.find_one({"_id": chat_id})
+            if doc and doc.get("admin_skip"):
+                self.admin_skip.append(chat_id)
+        return chat_id in self.admin_skip
+
+    async def set_skip_mode(self, chat_id: int, admin_only: bool = False) -> None:
+        if not hasattr(self, "admin_skip"):
+            self.admin_skip = []
+        if admin_only:
+            if chat_id not in self.admin_skip:
+                self.admin_skip.append(chat_id)
+        else:
+            if chat_id in self.admin_skip:
+                self.admin_skip.remove(chat_id)
+        await self.chatsdb.update_one(
+            {"_id": chat_id},
+            {"$set": {"admin_skip": admin_only}},
             upsert=True,
         )
 
