@@ -2,6 +2,10 @@ import asyncio
 from pyrogram import Client
 
 
+from os import getenv
+from dotenv import load_dotenv
+load_dotenv()
+
 async def generate():
     print()
     print("╔══════════════════════════════════════════════════╗")
@@ -10,8 +14,16 @@ async def generate():
     print("╚══════════════════════════════════════════════════╝")
     print()
 
-    api_id   = int(input("  API_ID   : ").strip())
-    api_hash = input("  API_HASH : ").strip()
+    api_id_val = getenv("API_ID")
+    api_hash_val = getenv("API_HASH")
+    if not api_id_val or not api_hash_val:
+        api_id = int(input("  API_ID   : ").strip())
+        api_hash = input("  API_HASH : ").strip()
+    else:
+        api_id = int(api_id_val)
+        api_hash = api_hash_val
+        print(f"  Using API_ID: {api_id}")
+        print(f"  Using API_HASH: {api_hash}")
 
     print()
     print("  Starting Telegram client — you will receive an OTP...")

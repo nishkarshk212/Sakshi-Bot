@@ -63,7 +63,7 @@ class Inline:
                 [self.ikb(
                     text=status,
                     callback_data=f"controls status {chat_id}",
-                    style=enums.ButtonStyle.PRIMARY,
+                    style=enums.ButtonStyle.DANGER,
                 )]
             )
         elif timer:
@@ -71,42 +71,39 @@ class Inline:
                 [self.ikb(
                     text=timer,
                     callback_data=f"controls status {chat_id}",
-                    style=enums.ButtonStyle.PRIMARY,
+                    style=enums.ButtonStyle.DANGER,
                 )]
             )
 
         if not remove:
             keyboard.append(
                 [
-                    self.ikb(text="▷", callback_data=f"controls resume {chat_id}", style=enums.ButtonStyle.PRIMARY),
-                    self.ikb(text="II", callback_data=f"controls pause {chat_id}", style=enums.ButtonStyle.PRIMARY),
-                    self.ikb(text="⥁", callback_data=f"controls replay {chat_id}", style=enums.ButtonStyle.PRIMARY),
-                    self.ikb(text="‣‣I", callback_data=f"controls skip {chat_id}", style=enums.ButtonStyle.PRIMARY),
-                    self.ikb(text="▢", callback_data=f"controls stop {chat_id}", style=enums.ButtonStyle.PRIMARY),
+                    self.ikb(text="▷", callback_data=f"controls resume {chat_id}", style=enums.ButtonStyle.DANGER),
+                    self.ikb(text="II", callback_data=f"controls pause {chat_id}", style=enums.ButtonStyle.DANGER),
+                    self.ikb(text="⥁", callback_data=f"controls replay {chat_id}", style=enums.ButtonStyle.DANGER),
+                    self.ikb(text="‣‣I", callback_data=f"controls skip {chat_id}", style=enums.ButtonStyle.DANGER),
+                    self.ikb(text="▢", callback_data=f"controls stop {chat_id}", style=enums.ButtonStyle.DANGER),
                 ]
             )
-            # Autoplay toggle: green (SUCCESS) when on, red (DANGER) when off.
-            # This kurigram build's ButtonStyle only has DEFAULT/PRIMARY/DANGER/
-            # SUCCESS — SUCCESS is the green one. (POSITIVE/NEGATIVE don't exist.)
-            # Label per user request: small-caps "ᴀᴜᴛᴏᴘʟᴀʏ" + ♾ (U+267E) when on.
+            # Autoplay toggle: red (DANGER) style.
             if autoplay:
                 mode_info = {
-                    "vibe": ("Vibe", "5316553657087435063", enums.ButtonStyle.PRIMARY),
+                    "vibe": ("Vibe", "5316553657087435063", enums.ButtonStyle.DANGER),
                     "artist": ("Artist", "5233578612665375810", enums.ButtonStyle.DANGER),
-                    "trending": ("Trending", "5317058732356542197", enums.ButtonStyle.SUCCESS),
-                }.get(mode or "vibe", ("Vibe", "5316553657087435063", enums.ButtonStyle.PRIMARY))
+                    "trending": ("Trending", "5317058732356542197", enums.ButtonStyle.DANGER),
+                }.get(mode or "vibe", ("Vibe", "5316553657087435063", enums.ButtonStyle.DANGER))
                 keyboard.append(
                     [
                         self.ikb(
                             text="ᴀᴜᴛᴏᴘʟᴀʏ ♾",
                             callback_data=f"autoplay {chat_id}",
-                            style=enums.ButtonStyle.SUCCESS,
+                            style=enums.ButtonStyle.DANGER,
                             icon_custom_emoji_id="5199785165735367039",
                         ),
                         self.ikb(
                             text=mode_info[0],
                             callback_data=f"autoplay_mode {chat_id}",
-                            style=mode_info[2],
+                            style=enums.ButtonStyle.DANGER,
                             icon_custom_emoji_id=mode_info[1],
                         ),
                     ]
@@ -220,13 +217,13 @@ class Inline:
                     self.ikb(
                         text=_lang["back"],
                         callback_data="help back",
-                        style=enums.ButtonStyle.PRIMARY,
+                        style=enums.ButtonStyle.DANGER,
                         icon_custom_emoji_id="6084584420537275358",
                     ),
                     self.ikb(
                         text=_lang["close"],
                         callback_data="help close",
-                        style=enums.ButtonStyle.PRIMARY,
+                        style=enums.ButtonStyle.DANGER,
                         icon_custom_emoji_id="6084584420537275358",
                     ),
                 ]
@@ -278,7 +275,7 @@ class Inline:
                     self.ikb(
                         text=_text,
                         callback_data=f"controls force {chat_id} {item_id}",
-                        style=enums.ButtonStyle.PRIMARY,
+                        style=enums.ButtonStyle.SUCCESS,
                     )
                 ]
             ]
@@ -326,21 +323,21 @@ class Inline:
                 self.ikb(
                     text=f"{lang['add_me']} ✦",
                     url=f"https://t.me/{app.username}?startgroup=true",
-                    style=enums.ButtonStyle.SUCCESS,
+                    style=enums.ButtonStyle.DANGER,
                     icon_custom_emoji_id="5469798743043764619",
                 )
             ],
         ]
         if private:
             rows += [
-                [self.ikb(text=lang["help"], callback_data="help", style=enums.ButtonStyle.SUCCESS, icon_custom_emoji_id="5471921006643800598")],
+                [self.ikb(text=lang["help"], callback_data="help", style=enums.ButtonStyle.DANGER, icon_custom_emoji_id="5471921006643800598")],
                 [
-                    self.ikb(text=lang["support"], url=config.SUPPORT_CHAT, style=enums.ButtonStyle.SUCCESS, icon_custom_emoji_id="5422782960120134635"),
-                    self.ikb(text=lang["channel"], url=config.SUPPORT_CHANNEL, style=enums.ButtonStyle.SUCCESS, icon_custom_emoji_id="5422357698228290320"),
+                    self.ikb(text=lang["support"], url=config.SUPPORT_CHAT, style=enums.ButtonStyle.DANGER, icon_custom_emoji_id="5422782960120134635"),
+                    self.ikb(text=lang["channel"], url=config.SUPPORT_CHANNEL, style=enums.ButtonStyle.DANGER, icon_custom_emoji_id="5422357698228290320"),
                 ]
             ]
         else:
-            rows += [[self.ikb(text=lang["language"], callback_data="language", style=enums.ButtonStyle.PRIMARY, icon_custom_emoji_id="5422826721541914133")]]
+            rows += [[self.ikb(text=lang["language"], callback_data="language", style=enums.ButtonStyle.DANGER, icon_custom_emoji_id="5422826721541914133")]]
         return self.ikm(rows)
 
     def yt_key(self, link: str) -> types.InlineKeyboardMarkup:

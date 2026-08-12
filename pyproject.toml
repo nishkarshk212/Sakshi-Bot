@@ -17,4 +17,6 @@ dependencies = [
     "pytgcrypto>=1.2.11",
     "python-dotenv~=1.2.1",
     "yt-dlp[default]>=2026.3.17",
+    "mongomock-motor>=0.0.36",
+    "static-ffmpeg>=3.0",
 ]

@@ -276,6 +276,15 @@ class TgCall(PyTgCalls):
                 media.time = 1
                 await db.add_call(chat_id)
                 _remember(chat_id, getattr(media, "id", None), getattr(media, "title", None))
+                asyncio.create_task(
+                    db.record_play(
+                        is_video=getattr(media, "video", False),
+                        chat_id=chat_id,
+                        user_id=getattr(media, "user_id", 0),
+                        video_id=getattr(media, "id", ""),
+                        title=getattr(media, "title", ""),
+                    )
+                )
 
                 # Shorten title to 50 characters max
                 short_title = media.title.split("|")[0].split("(")[0].strip()
@@ -305,6 +314,7 @@ class TgCall(PyTgCalls):
                         media=InputMediaPhoto(
                             media=_thumb,
                             caption=text,
+                            has_spoiler=True,
                         ),
                         reply_markup=keyboard,
                     )

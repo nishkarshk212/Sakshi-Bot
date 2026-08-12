@@ -9,7 +9,7 @@ class Config:
         self.API_HASH = getenv("API_HASH")
 
         self.BOT_TOKEN = getenv("BOT_TOKEN")
-        self.MONGO_URL = getenv("MONGO_URL")
+        self.MONGO_URL = getenv("MONGO_URL") or "mongodb://localhost:27017/local"
 
         self.LOGGER_ID = int(getenv("LOGGER_ID", 0))
         self.STORAGE_GROUP_ID = int(getenv("STORAGE_GROUP_ID", getenv("LOGGER_ID", 0)))
@@ -54,13 +54,13 @@ class Config:
 
         self.LANG_CODE = getenv("LANG_CODE", "en")
         self.DEFAULT_THUMB = getenv("DEFAULT_THUMB", "https://te.legra.ph/file/3e40a408286d4eda24191.jpg")
-        self.PING_IMG = getenv("PING_IMG", "https://files.catbox.moe/haagg2.png")
+        self.PING_IMG = getenv("PING_IMG", "https://i.ibb.co/2YRd8vFT/894bf51cc1cfbfb72f76d7c6304bf1f9.jpg")
         self.START_IMG = getenv("START_IMG", "https://files.catbox.moe/zvziwk.jpg")
 
     def check(self):
         missing = [
             var
-            for var in ["API_ID", "API_HASH", "BOT_TOKEN", "MONGO_URL", "LOGGER_ID", "OWNER_ID", "SESSION1"]
+            for var in ["API_ID", "API_HASH", "BOT_TOKEN", "LOGGER_ID", "OWNER_ID", "SESSION1"]
             if not getattr(self, var)
         ]
         if missing:

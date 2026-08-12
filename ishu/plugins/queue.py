@@ -52,6 +52,7 @@ async def _queue_func(_, m: types.Message):
             media=types.InputMediaPhoto(
                 media=_thumb,
                 caption=_text,
+                has_spoiler=True,
             ),
             reply_markup=_buttons,
         )

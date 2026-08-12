@@ -22,11 +22,9 @@ async def _help(_, m: types.Message):
 
 
 START_IMAGES = [
-    "https://i.ibb.co/nMTGfdrC/Cute-girl-pic.jpg",
-    "https://i.ibb.co/5X3GtfK3/2.jpg",
-    "https://i.ibb.co/wDnd11t/Bandana-hairstyle.jpg",
-    "https://i.ibb.co/TqH6tNYM/image.jpg",
-    "https://i.ibb.co/0jw84PFV/Elegant-Indian-beauty-with-dreamy-aesthetic-vibes.jpg",
+    "https://i.ibb.co/sdFLLwPX/2f504cd6bcfde8d4d8b841882e8fb808.jpg",
+    "https://i.ibb.co/cKDssQTk/56ff149d8bd3ed814f5b54dfaab008e5.jpg",
+    "https://i.ibb.co/2YRd8vFT/894bf51cc1cfbfb72f76d7c6304bf1f9.jpg",
 ]
 
 START_ANIMATION = [

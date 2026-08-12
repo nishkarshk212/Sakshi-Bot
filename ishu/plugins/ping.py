@@ -11,6 +11,10 @@ from ishu import app, anon, boot, config, lang
 from ishu.helpers import buttons
 
 
+import random
+from ishu.plugins.start import START_IMAGES
+
+
 @app.on_message(filters.command(["alive", "ping"]) & ~app.bl_users)
 @lang.language()
 async def _ping(_, m: types.Message):
@@ -29,7 +33,8 @@ async def _ping(_, m: types.Message):
                 psutil.virtual_memory().percent,
                 psutil.disk_usage("/").percent,
                 await anon.ping(),
-            )
+            ),
+            has_spoiler=True,
         ),
         reply_markup=buttons.ping_markup(m.lang["support"]),
     )

@@ -3,15 +3,28 @@
 # This file is part of AnonXMusic
 
 
-from pyrogram import filters, types
+from pyrogram import enums, filters, types
 
-from ishu import app, config, lang
+from ishu import app, config, db, lang
 from ishu.helpers import buttons
 
 
 # ── Usage text builder ────────────────────────────────────────────────────────
 
-USAGE_AUDIO = """<emoji id=5938473438468378529>🎵</emoji> <u><b>Audio Play Commands</b></u>
+USAGE_STATS = """<blockquote><b><emoji id=6338968354157499266>💎</emoji> ꜱ ᴏ ɴ ɢ  ᴜ ꜱ ᴀ ɢ ᴇ  ꜱ ᴛ ᴀ ᴛ ꜱ</b></blockquote>
+
+<blockquote><b><emoji id=5274055917766202507>📅</emoji> <u>Today's Playback (Last 24 Hours)</u></b>
+<emoji id=5470135030393090150>🎵</emoji> <b>Audio Songs Played:</b> <code>{today_audio}</code>
+<emoji id=5321505140199418151>🎬</emoji> <b>Video Songs Played:</b> <code>{today_video}</code>
+<emoji id=6242538306773457661>⚡</emoji> <b>Total Played Today:</b> <code>{today_total}</code></blockquote>
+
+<blockquote><b><emoji id=5352629724516458059>🌐</emoji> <u>Overall Playback (All Time)</u></b>
+<emoji id=5463107823946717464>🎵</emoji> <b>Overall Audio Songs:</b> <code>{overall_audio}</code>
+<emoji id=5937999673510858217>🎬</emoji> <b>Overall Video Songs:</b> <code>{overall_video}</code>
+<emoji id=6228704973027284984>🔥</emoji> <b>Overall Total Songs:</b> <code>{overall_total}</code></blockquote>"""
+
+
+USAGE_AUDIO = """<emoji id=5470135030393090150>🎵</emoji> <u><b>Audio Play Commands</b></u>
 
 <b>Basic:</b>
   <code>/play &lt;song name&gt;</code>
@@ -37,7 +50,7 @@ USAGE_AUDIO = """<emoji id=5938473438468378529>🎵</emoji> <u><b>Audio Play Com
 <b>Aliases:</b>  <code>/play</code>  •  <code>/playforce</code>"""
 
 
-USAGE_VIDEO = """<emoji id=5956360370546959712>🎬</emoji> <u><b>Video Play Commands</b></u>
+USAGE_VIDEO = """<emoji id=5321505140199418151>🎬</emoji> <u><b>Video Play Commands</b></u>
 
 <b>Basic:</b>
   <code>/vplay &lt;song/video name&gt;</code>
@@ -61,7 +74,7 @@ USAGE_VIDEO = """<emoji id=5956360370546959712>🎬</emoji> <u><b>Video Play Com
 <b>Note:</b> Video mode requires the voice chat to support screen sharing."""
 
 
-USAGE_CONTROLS = """<emoji id=5904258298764334001>⚙️</emoji> <u><b>Playback Control Commands</b></u>
+USAGE_CONTROLS = """<emoji id=6242538306773457661>⚡</emoji> <u><b>Playback Control Commands</b></u>
 
 <b>In-chat Controls:</b>
   <code>/pause</code>      — Pause the current stream
@@ -81,7 +94,7 @@ USAGE_CONTROLS = """<emoji id=5904258298764334001>⚙️</emoji> <u><b>Playback 
   <code>/loop &lt;count&gt;</code>  — Loop the current song N times"""
 
 
-USAGE_EXAMPLES = """<emoji id=5852843197181370128>💡</emoji> <u><b>Quick Examples</b></u>
+USAGE_EXAMPLES = """<emoji id=6228704973027284984>🔥</emoji> <u><b>Quick Examples</b></u>
 
 <b>Play a song by name:</b>
   <code>/play Blinding Lights</code>
@@ -106,7 +119,7 @@ USAGE_EXAMPLES = """<emoji id=5852843197181370128>💡</emoji> <u><b>Quick Examp
   Reply to any audio/video file with <code>/play</code> or <code>/vplay</code>"""
 
 
-USAGE_TIPS = """<emoji id=5773626993010546707>🎶</emoji> <u><b>Tips & Notes</b></u>
+USAGE_TIPS = """<emoji id=5463107823946717464>🎵</emoji> <u><b>Tips & Notes</b></u>
 
 <b>Download & Streaming:</b>
   • Railway YT API — self-hosted YouTube proxy (Active)
@@ -127,18 +140,21 @@ USAGE_TIPS = """<emoji id=5773626993010546707>🎶</emoji> <u><b>Tips & Notes</b
 def _usage_keyboard(page: str) -> types.InlineKeyboardMarkup:
     """Inline keyboard for navigating between usage sections."""
     nav = {
-        "audio":    ("🎵 Audio",    "usage_audio"),
-        "video":    ("🎬 Video",    "usage_video"),
-        "controls": ("⚙️ Controls", "usage_controls"),
-        "examples": ("💡 Examples", "usage_examples"),
-        "tips":     ("🎶 Tips",     "usage_tips"),
+        "stats":    ("Play Stats", "usage_stats",    "6338968354157499266"),
+        "audio":    ("Audio",      "usage_audio",    "5470135030393090150"),
+        "video":    ("Video",      "usage_video",    "5321505140199418151"),
+        "controls": ("Controls",   "usage_controls", "6242538306773457661"),
+        "examples": ("Examples",   "usage_examples", "6228704973027284984"),
+        "tips":     ("Tips",       "usage_tips",     "5463107823946717464"),
     }
     rows = []
     row  = []
-    for key, (label, data) in nav.items():
+    for key, (label, data, emoji_id) in nav.items():
         btn = types.InlineKeyboardButton(
             f"› {label} ‹" if key == page else label,
             callback_data=data,
+            style=enums.ButtonStyle.SUCCESS if key == page else enums.ButtonStyle.PRIMARY,
+            icon_custom_emoji_id=emoji_id,
         )
         row.append(btn)
         if len(row) == 2:
@@ -146,11 +162,20 @@ def _usage_keyboard(page: str) -> types.InlineKeyboardMarkup:
             row = []
     if row:
         rows.append(row)
-    rows.append([types.InlineKeyboardButton("❌ Close", callback_data="usage_close")])
+    rows.append([
+        types.InlineKeyboardButton(
+            "Close",
+            callback_data="usage_close",
+            style=enums.ButtonStyle.DANGER,
+        )
+    ])
     return types.InlineKeyboardMarkup(rows)
 
 
-def _page_text(page: str, duration_limit: int, queue_limit: int, support: str) -> str:
+async def _page_text(page: str, duration_limit: int, queue_limit: int, support: str) -> str:
+    if page == "stats":
+        stats = await db.get_play_usage_stats()
+        return USAGE_STATS.format(**stats)
     pages = {
         "audio":    USAGE_AUDIO,
         "video":    USAGE_VIDEO,
@@ -173,17 +198,18 @@ def _page_text(page: str, duration_limit: int, queue_limit: int, support: str) -
 )
 @lang.language()
 async def usage_handler(_, m: types.Message) -> None:
-    """Send the interactive usage guide."""
-    text = _page_text(
-        "audio",
+    """Send the interactive usage guide with playback stats."""
+    text = await _page_text(
+        "stats",
         duration_limit=config.DURATION_LIMIT // 60,
         queue_limit=config.QUEUE_LIMIT,
         support=config.SUPPORT_CHAT,
     )
     await m.reply_text(
         text=text,
-        reply_markup=_usage_keyboard("audio"),
+        reply_markup=_usage_keyboard("stats"),
         quote=True,
+        parse_mode=enums.ParseMode.HTML,
         disable_web_page_preview=True,
     )
 
@@ -191,7 +217,7 @@ async def usage_handler(_, m: types.Message) -> None:
 # ── Callback handler for page navigation ─────────────────────────────────────
 
 @app.on_callback_query(
-    filters.regex(r"^usage_(audio|video|controls|examples|tips|close)$")
+    filters.regex(r"^usage_(stats|audio|video|controls|examples|tips|close)$")
     & ~app.bl_users
 )
 async def usage_cb(_, query: types.CallbackQuery) -> None:
@@ -205,7 +231,7 @@ async def usage_cb(_, query: types.CallbackQuery) -> None:
             pass
         return
 
-    text = _page_text(
+    text = await _page_text(
         action,
         duration_limit=config.DURATION_LIMIT // 60,
         queue_limit=config.QUEUE_LIMIT,
@@ -215,6 +241,7 @@ async def usage_cb(_, query: types.CallbackQuery) -> None:
         await query.edit_message_text(
             text=text,
             reply_markup=_usage_keyboard(action),
+            parse_mode=enums.ParseMode.HTML,
             disable_web_page_preview=True,
         )
         await query.answer()
