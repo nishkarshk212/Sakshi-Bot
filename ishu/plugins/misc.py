@@ -191,7 +191,7 @@ async def update_timer(length=10, sleep=5):
                 played = media.time
                 remaining = max(duration - played, 0)
                 pos = min(int((played / duration) * length), length - 1)
-                timer = "—" * pos + "♪" + "—" * (length - pos - 1)
+                timer = "—" * pos + "𝄞" + "—" * (length - pos - 1)
 
                 if remaining <= 30:
                     next = queue.get_next(chat_id, check=True)

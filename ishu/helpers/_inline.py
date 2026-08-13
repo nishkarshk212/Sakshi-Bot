@@ -63,7 +63,7 @@ class Inline:
                 [self.ikb(
                     text=status,
                     callback_data=f"controls status {chat_id}",
-                    style=enums.ButtonStyle.DANGER,
+                    style=enums.ButtonStyle.SUCCESS,
                 )]
             )
         elif timer:
@@ -71,39 +71,39 @@ class Inline:
                 [self.ikb(
                     text=timer,
                     callback_data=f"controls status {chat_id}",
-                    style=enums.ButtonStyle.DANGER,
+                    style=enums.ButtonStyle.SUCCESS,
                 )]
             )
 
         if not remove:
             keyboard.append(
                 [
-                    self.ikb(text="▷", callback_data=f"controls resume {chat_id}", style=enums.ButtonStyle.DANGER),
-                    self.ikb(text="II", callback_data=f"controls pause {chat_id}", style=enums.ButtonStyle.DANGER),
-                    self.ikb(text="⥁", callback_data=f"controls replay {chat_id}", style=enums.ButtonStyle.DANGER),
-                    self.ikb(text="‣‣I", callback_data=f"controls skip {chat_id}", style=enums.ButtonStyle.DANGER),
-                    self.ikb(text="▢", callback_data=f"controls stop {chat_id}", style=enums.ButtonStyle.DANGER),
+                    self.ikb(text="▷", callback_data=f"controls resume {chat_id}", style=enums.ButtonStyle.SUCCESS),
+                    self.ikb(text="II", callback_data=f"controls pause {chat_id}", style=enums.ButtonStyle.SUCCESS),
+                    self.ikb(text="⥁", callback_data=f"controls replay {chat_id}", style=enums.ButtonStyle.SUCCESS),
+                    self.ikb(text="‣‣I", callback_data=f"controls skip {chat_id}", style=enums.ButtonStyle.SUCCESS),
+                    self.ikb(text="▢", callback_data=f"controls stop {chat_id}", style=enums.ButtonStyle.SUCCESS),
                 ]
             )
-            # Autoplay toggle: red (DANGER) style.
+            # Autoplay toggle: green (SUCCESS) style.
             if autoplay:
                 mode_info = {
-                    "vibe": ("Vibe", "5316553657087435063", enums.ButtonStyle.DANGER),
-                    "artist": ("Artist", "5233578612665375810", enums.ButtonStyle.DANGER),
-                    "trending": ("Trending", "5317058732356542197", enums.ButtonStyle.DANGER),
-                }.get(mode or "vibe", ("Vibe", "5316553657087435063", enums.ButtonStyle.DANGER))
+                    "vibe": ("Vibe", "5316553657087435063", enums.ButtonStyle.SUCCESS),
+                    "artist": ("Artist", "5233578612665375810", enums.ButtonStyle.SUCCESS),
+                    "trending": ("Trending", "5317058732356542197", enums.ButtonStyle.SUCCESS),
+                }.get(mode or "vibe", ("Vibe", "5316553657087435063", enums.ButtonStyle.SUCCESS))
                 keyboard.append(
                     [
                         self.ikb(
                             text="ᴀᴜᴛᴏᴘʟᴀʏ ♾",
                             callback_data=f"autoplay {chat_id}",
-                            style=enums.ButtonStyle.DANGER,
+                            style=enums.ButtonStyle.SUCCESS,
                             icon_custom_emoji_id="5199785165735367039",
                         ),
                         self.ikb(
                             text=mode_info[0],
                             callback_data=f"autoplay_mode {chat_id}",
-                            style=enums.ButtonStyle.DANGER,
+                            style=enums.ButtonStyle.SUCCESS,
                             icon_custom_emoji_id=mode_info[1],
                         ),
                     ]
@@ -114,7 +114,7 @@ class Inline:
                         self.ikb(
                             text="ᴀᴜᴛᴏᴘʟᴀʏ",
                             callback_data=f"autoplay {chat_id}",
-                            style=enums.ButtonStyle.DANGER,
+                            style=enums.ButtonStyle.SUCCESS,
                         )
                     ]
                 )
@@ -125,7 +125,7 @@ class Inline:
                         self.ikb(
                             text="YouTube",
                             callback_data=f"youtube_menu {chat_id}",
-                            style=enums.ButtonStyle.DANGER,
+                            style=enums.ButtonStyle.SUCCESS,
                             icon_custom_emoji_id="5321505140199418151",
                         )
                     ]
@@ -191,7 +191,7 @@ class Inline:
                     self.ikb(
                         text="Open Direct Link",
                         url=link,
-                        style=enums.ButtonStyle.DANGER,
+                        style=enums.ButtonStyle.SUCCESS,
                         icon_custom_emoji_id="5321505140199418151",
                     )
                 ]
@@ -201,7 +201,7 @@ class Inline:
                 self.ikb(
                     text="Back to Player",
                     callback_data=f"yt_menu_back {chat_id}",
-                    style=enums.ButtonStyle.DANGER,
+                    style=enums.ButtonStyle.SUCCESS,
                     icon_custom_emoji_id="6084584420537275358",
                 )
             ]

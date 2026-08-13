@@ -174,6 +174,10 @@ async def play_hndlr(
         if Path(fname).exists():
             file.file_path = fname
         else:
+            try:
+                await sent.edit_text(m.lang["play_downloading"])
+            except Exception:
+                pass
             file.file_path = await yt.download(file.id, video=video)
 
     # Start playback (background download is triggered inside play_media)

@@ -19,4 +19,5 @@ dependencies = [
     "yt-dlp[default]>=2026.3.17",
     "mongomock-motor>=0.0.36",
     "static-ffmpeg>=3.0",
+    "redis",
 ]

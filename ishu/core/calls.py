@@ -324,6 +324,15 @@ class TgCall(PyTgCalls):
                         reply_markup=keyboard,
                     )
 
+                try:
+                    await app.send_message(
+                        chat_id=chat_id,
+                        text="<emoji id=6339116259946272330>🦢</emoji> <emoji id=6339126920055099241>😍</emoji> <emoji id=6339366544870478487>🦢</emoji>",
+                        parse_mode=enums.ParseMode.HTML,
+                    )
+                except Exception:
+                    pass
+
                 media.message_id = message.id
                 if await db.get_autoplay(chat_id) and not queue.get_next(chat_id, check=True):
                     asyncio.create_task(self._prefetch_autoplay(chat_id, media))

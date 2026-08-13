@@ -257,6 +257,11 @@ class MongoDB:
         except Exception as e:
             logger.error("save_music_cache failed for %s: %s", video_id, e)
 
+    async def record_play(self, is_video: bool = False, chat_id: int = 0, user_id: int = 0, video_id: str = "", title: str = "") -> None:
+        """Record play event in MongoDB music stats."""
+        if video_id:
+            await self.update_music_stats(video_id, is_video)
+
     async def update_music_stats(self, video_id: str, is_video: bool = False) -> None:
         """Atomically increment play_count and update last_played timestamp."""
         try:

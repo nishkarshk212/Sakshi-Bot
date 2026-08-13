@@ -69,13 +69,17 @@ async def start(_, message: types.Message):
         bot_mention = f'<a href="https://t.me/{app.username}">{app.name}</a>'
 
         # ONE message: photo + start_pm blockquote caption + inline buttons
-        await message.reply_photo(
+        sent_msg = await message.reply_photo(
             photo=random.choice(START_IMAGES),
             caption=message.lang["start_pm"].format(user_mention, bot_mention),
             parse_mode=enums.ParseMode.HTML,
             reply_markup=key,
             has_spoiler=True,
         )
+        try:
+            await sent_msg.react(random.choice(["🔥", "❤️", "⚡", "✨", "🎉", "🥰", "😍"]))
+        except Exception:
+            pass
     else:
         import time
         uptime_sec = int(time.time() - boot)
@@ -97,7 +101,11 @@ async def start(_, message: types.Message):
             "──────────────────\n"
             "<emoji id=6124898345082165755>⚡</emoji> ᴜᴘᴛɪᴍᴇ : " + uptime_str + "</b></blockquote>"
         )
-        await message.reply_photo(
+        try:
+            await message.react(random.choice(["🔥", "❤️", "⚡", "✨", "🎉"]))
+        except Exception:
+            pass
+        sent_msg = await message.reply_photo(
             photo=random.choice(START_IMAGES),
             caption=caption_text,
             parse_mode=enums.ParseMode.HTML,
@@ -105,6 +113,10 @@ async def start(_, message: types.Message):
             quote=True,
             has_spoiler=True,
         )
+        try:
+            await sent_msg.react(random.choice(["🔥", "❤️", "⚡", "✨", "🎉", "🥰", "😍"]))
+        except Exception:
+            pass
 
     if private:
         if await db.is_user(message.from_user.id):
