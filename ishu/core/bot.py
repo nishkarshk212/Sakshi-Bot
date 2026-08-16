@@ -39,6 +39,53 @@ PRIVATE_COMMANDS = [
 ]
 
 
+class SudoersFilter(pyrogram.filters.Filter):
+    def __init__(self, bot):
+        self.bot = bot
+
+    async def __call__(self, _, client, update):
+        user = getattr(update, "from_user", None) or getattr(update, "sender_chat", None)
+        if not user:
+            return False
+        user_id = user.id
+
+        if user_id == config.OWNER_ID or user_id in getattr(self.bot, "sudoer_ids", set()):
+            return True
+
+        from ishu import app, db
+        if user_id in getattr(app, "sudoer_ids", set()):
+            return True
+
+        bot_token = getattr(client, "bot_token", None)
+        if bot_token:
+            try:
+                clone = await db.get_clone_by_token(bot_token)
+                if clone and clone.get("owner_id") == user_id:
+                    return True
+            except Exception:
+                pass
+
+        return False
+
+    def __contains__(self, user_id):
+        return user_id == config.OWNER_ID or user_id in getattr(self.bot, "sudoer_ids", set())
+
+    def add(self, user_id):
+        self.bot.sudoer_ids.add(user_id)
+
+    def discard(self, user_id):
+        self.bot.sudoer_ids.discard(user_id)
+
+    def remove(self, user_id):
+        self.bot.sudoer_ids.discard(user_id)
+
+    def update(self, user_ids):
+        self.bot.sudoer_ids.update(user_ids)
+
+    def __len__(self):
+        return len(self.bot.sudoer_ids)
+
+
 class Bot(pyrogram.Client):
     def __init__(self):
         super().__init__(
@@ -53,7 +100,8 @@ class Bot(pyrogram.Client):
         self.owner = config.OWNER_ID
         self.logger = config.LOGGER_ID
         self.bl_users = pyrogram.filters.user()
-        self.sudoers = pyrogram.filters.user(self.owner)
+        self.sudoer_ids = {config.OWNER_ID}
+        self.sudoers = SudoersFilter(self)
 
     async def set_commands(self) -> None:
         """Register the "/" command menu so Telegram suggests commands."""

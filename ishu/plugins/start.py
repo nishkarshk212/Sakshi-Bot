@@ -28,27 +28,30 @@ START_IMAGES = [
 ]
 
 START_ANIMATION = [
-    "<blockquote><b><emoji id=5411285122215332752></emoji> ɪɴɪᴛɪᴀʟɪᴢɪɴɢ... <emoji id=5425004944270850753>💀</emoji></b></blockquote>",
-    "<blockquote><b><emoji id=5411285122215332752></emoji>  ʟᴏᴀᴅɪɴɢ ᴍᴜꜱɪᴄ ᴇɴɢɪɴᴇ... <emoji id=5470135030393090150>🎵</emoji></b></blockquote>",
-    "<blockquote><b><emoji id=5411285122215332752></emoji>  ᴄᴏɴɴᴇᴄᴛɪɴɢ ᴛᴏ ꜱᴇʀᴠᴇʀ... <emoji id=5447410659077661506>🌐</emoji></b></blockquote>",
-    "<blockquote><b><emoji id=5411285122215332752></emoji>  ꜰᴇᴛᴄʜɪɴɢ ᴘʟᴀʏʟɪꜱᴛ... <emoji id=5431721976769027887>📂</emoji></b></blockquote>",
-    "<blockquote><b><emoji id=5411285122215332752></emoji>  ᴄʜᴇᴄᴋɪɴɢ ᴠᴏɪᴄᴇ ᴄʜᴀᴛ... <emoji id=5294339927318739359>🎙️</emoji></b></blockquote>",
-    "<blockquote><b><emoji id=5411285122215332752></emoji>  ᴏᴘᴛɪᴍɪᴢɪɴɢ ꜱᴛʀᴇᴀᴍ... <emoji id=5372917041193828849>🚀</emoji></b></blockquote>",
-    "<blockquote><b><emoji id=5411285122215332752></emoji>  ꜱʏꜱᴛᴇᴍ ꜱᴛᴀʀᴛᴇᴅ! <emoji id=5895449329430173749>❤️</emoji> <emoji id=6082505415847842709>☺️</emoji></b></blockquote>",
+    "<blockquote><b>INITIALIZING...</b></blockquote>",
+    "<blockquote><b>LOADING MUSIC ENGINE...</b></blockquote>",
+    "<blockquote><b>CONNECTING TO SERVER...</b></blockquote>",
+    "<blockquote><b>FETCHING PLAYLIST...</b></blockquote>",
+    "<blockquote><b>CHECKING VOICE CHAT...</b></blockquote>",
+    "<blockquote><b>OPTIMIZING STREAM...</b></blockquote>",
+    "<blockquote><b>SYSTEM STARTED!</b></blockquote>",
 ]
 
 
 @app.on_message(filters.command(["start"]))
 @lang.language()
-async def start(_, message: types.Message):
+async def start(client, message: types.Message):
     if message.from_user.id in app.bl_users and message.from_user.id not in db.notified:
         return await message.reply_text(message.lang["bl_user_notify"])
 
     if len(message.command) > 1 and message.command[1] == "help":
-        return await _help(_, message)
+        return await _help(client, message)
+
+    bot_un = getattr(client, "username", None) or getattr(getattr(client, "me", None), "username", None) or app.username
+    bot_nm = getattr(client, "name", None) or getattr(getattr(client, "me", None), "first_name", None) or app.name
 
     private = message.chat.type == enums.ChatType.PRIVATE
-    key = buttons.start_key(message.lang, private)
+    key = buttons.start_key(message.lang, private, bot_username=bot_un)
 
     if private:
         # Delete the /start command message
@@ -66,7 +69,7 @@ async def start(_, message: types.Message):
 
         # Build clickable mentions
         user_mention = f'<a href="tg://user?id={message.from_user.id}">{message.from_user.first_name}</a>'
-        bot_mention = f'<a href="https://t.me/{app.username}">{app.name}</a>'
+        bot_mention = f'<a href="https://t.me/{bot_un}">{bot_nm}</a>'
 
         # ONE message: photo + start_pm blockquote caption + inline buttons
         sent_msg = await message.reply_photo(
@@ -76,10 +79,6 @@ async def start(_, message: types.Message):
             reply_markup=key,
             has_spoiler=True,
         )
-        try:
-            await sent_msg.react(random.choice(["🔥", "❤️", "⚡", "✨", "🎉", "🥰", "😍"]))
-        except Exception:
-            pass
     else:
         import time
         uptime_sec = int(time.time() - boot)
@@ -97,7 +96,7 @@ async def start(_, message: types.Message):
             "<blockquote><b><emoji id=6125150373763094821>⭐</emoji> ᴀ ᴄ ᴛ ɪ ᴠ ᴇ  ᴀ ɴ ᴅ  ᴀ ʟ ɪ ᴠ ᴇ\n"
             "──────────────────\n"
             "<emoji id=6124898345082165755>⚡</emoji> ꜱʏꜱᴛᴇᴍ ɪꜱ ʀᴜɴɴɪɴɢ ꜱᴍᴏᴏᴛʜʟʏ .\n"
-            "<emoji id=6125150373763094821>⭐</emoji> ᴄᴏʀᴇ : ˹ 🇨🇦 ♫ ʟɪʟʏ፝֟ ꭙ ᴍᴜꜱɪᴄʙᴏᴛ 𐦍 ˼ ᴇɴɢɪɴᴇ ᴠ2.0\n"
+            f"<emoji id=6125150373763094821>⭐</emoji> ᴄᴏʀᴇ : {bot_nm} ᴇɴɢɪɴᴇ ᴠ2.0\n"
             "──────────────────\n"
             "<emoji id=6124898345082165755>⚡</emoji> ᴜᴘᴛɪᴍᴇ : " + uptime_str + "</b></blockquote>"
         )

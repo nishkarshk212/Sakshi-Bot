@@ -257,3 +257,46 @@ tasks.append(asyncio.create_task(track_time()))
 tasks.append(asyncio.create_task(update_timer()))
 if getattr(config, "AUTO_CLEANUP", True):
     tasks.append(asyncio.create_task(auto_cleanup()))
+
+
+@app.on_message(filters.command(["support", "supp", "supportchat"]) & ~app.bl_users)
+async def support_command(_, m: types.Message):
+    markup = types.InlineKeyboardMarkup([
+        [
+            types.InlineKeyboardButton(text="Support Chat", url=config.SUPPORT_CHAT),
+            types.InlineKeyboardButton(text="Support Channel", url=config.SUPPORT_CHANNEL),
+        ]
+    ])
+    await m.reply_text(
+        f"<b>Need assistance or have questions?</b>\n\n"
+        f"Join our official support community & channel below for updates and help!",
+        parse_mode=enums.ParseMode.HTML,
+        reply_markup=markup,
+        quote=True,
+    )
+
+
+@app.on_message(filters.command(["channel", "chan"]) & ~app.bl_users)
+async def channel_command(_, m: types.Message):
+    markup = types.InlineKeyboardMarkup([
+        [types.InlineKeyboardButton(text="Support Channel", url=config.SUPPORT_CHANNEL)]
+    ])
+    await m.reply_text(
+        f"<b>Official Support Channel:</b>\n{config.SUPPORT_CHANNEL}",
+        parse_mode=enums.ParseMode.HTML,
+        reply_markup=markup,
+        quote=True,
+    )
+
+
+@app.on_message(filters.command(["chat", "group"]) & ~app.bl_users)
+async def chat_command(_, m: types.Message):
+    markup = types.InlineKeyboardMarkup([
+        [types.InlineKeyboardButton(text="Support Chat", url=config.SUPPORT_CHAT)]
+    ])
+    await m.reply_text(
+        f"<b>Official Support Group:</b>\n{config.SUPPORT_CHAT}",
+        parse_mode=enums.ParseMode.HTML,
+        reply_markup=markup,
+        quote=True,
+    )

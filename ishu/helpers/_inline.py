@@ -1,17 +1,8 @@
-# Copyright (c) 2025 AnonymousX1025
-# Licensed under the MIT License.
-# This file is part of AnonXMusic
-
-
 from pyrogram import enums, types
 
 from ishu import app, config, lang
 from ishu.core.lang import lang_codes
 
-# Per-chat cache of the last panel rows so a partial re-render (e.g. toggling
-# autoplay, or the timer updater) keeps the other rows instead of clobbering
-# them. Without this, the autoplay button and the progress slider fight each
-# other: whichever task re-renders last wins and the other row vanishes.
 _panel_state: dict[int, dict] = {}
 
 
@@ -37,17 +28,12 @@ class Inline:
         mode: str = None,
         link: str = None,
     ) -> types.InlineKeyboardMarkup:
-        # Reuse the last-known rows for any dimension not explicitly passed,
-        # so a single-row update (timer tick OR autoplay toggle) preserves the
-        # rest of the panel.
         if chat_id in _panel_state:
             prev = _panel_state[chat_id]
             if status is None:
                 status = prev.get("status")
             if timer is None:
                 timer = prev.get("timer")
-            # None means "not explicitly passed" -> reuse cached state. An
-            # explicit False (toggle OFF) must win, so only fall back on None.
             if autoplay is None and not remove:
                 autoplay = prev.get("autoplay", False)
             if mode is None:
@@ -85,26 +71,23 @@ class Inline:
                     self.ikb(text="▢", callback_data=f"controls stop {chat_id}", style=enums.ButtonStyle.SUCCESS),
                 ]
             )
-            # Autoplay toggle: green (SUCCESS) style.
             if autoplay:
                 mode_info = {
-                    "vibe": ("Vibe", "5316553657087435063", enums.ButtonStyle.SUCCESS),
-                    "artist": ("Artist", "5233578612665375810", enums.ButtonStyle.SUCCESS),
-                    "trending": ("Trending", "5317058732356542197", enums.ButtonStyle.SUCCESS),
-                }.get(mode or "vibe", ("Vibe", "5316553657087435063", enums.ButtonStyle.SUCCESS))
+                    "vibe": ("Vibe", enums.ButtonStyle.SUCCESS),
+                    "artist": ("Artist", enums.ButtonStyle.SUCCESS),
+                    "trending": ("Trending", enums.ButtonStyle.SUCCESS),
+                }.get(mode or "vibe", ("Vibe", enums.ButtonStyle.SUCCESS))
                 keyboard.append(
                     [
                         self.ikb(
-                            text="ᴀᴜᴛᴏᴘʟᴀʏ ♾",
+                            text="Autoplay ON",
                             callback_data=f"autoplay {chat_id}",
                             style=enums.ButtonStyle.SUCCESS,
-                            icon_custom_emoji_id="5199785165735367039",
                         ),
                         self.ikb(
                             text=mode_info[0],
                             callback_data=f"autoplay_mode {chat_id}",
                             style=enums.ButtonStyle.SUCCESS,
-                            icon_custom_emoji_id=mode_info[1],
                         ),
                     ]
                 )
@@ -112,7 +95,7 @@ class Inline:
                 keyboard.append(
                     [
                         self.ikb(
-                            text="ᴀᴜᴛᴏᴘʟᴀʏ",
+                            text="Autoplay OFF",
                             callback_data=f"autoplay {chat_id}",
                             style=enums.ButtonStyle.SUCCESS,
                         )
@@ -123,16 +106,13 @@ class Inline:
                 keyboard.append(
                     [
                         self.ikb(
-                            text="YouTube",
+                            text="YouTube Menu",
                             callback_data=f"youtube_menu {chat_id}",
                             style=enums.ButtonStyle.SUCCESS,
-                            icon_custom_emoji_id="5321505140199418151",
                         )
                     ]
                 )
 
-        # Cache the resolved panel so the next partial re-render keeps these
-        # rows (timer updater <-> autoplay toggle no longer clobber each other).
         _panel_state[chat_id] = {
             "status": status,
             "timer": timer,
@@ -153,13 +133,11 @@ class Inline:
                     text="Songs",
                     callback_data=f"yt_cat songs {chat_id}",
                     style=get_style("songs"),
-                    icon_custom_emoji_id="5321505140199418151",
                 ),
                 self.ikb(
                     text="Artists",
                     callback_data=f"yt_cat artists {chat_id}",
                     style=get_style("artists"),
-                    icon_custom_emoji_id="5233578612665375810",
                 ),
             ],
             [
@@ -167,13 +145,11 @@ class Inline:
                     text="Albums",
                     callback_data=f"yt_cat albums {chat_id}",
                     style=get_style("albums"),
-                    icon_custom_emoji_id="5462956611033117422",
                 ),
                 self.ikb(
                     text="Playlists",
                     callback_data=f"yt_cat playlists {chat_id}",
                     style=get_style("playlists"),
-                    icon_custom_emoji_id="6007817446398890097",
                 ),
             ],
             [
@@ -181,7 +157,6 @@ class Inline:
                     text="Music Videos",
                     callback_data=f"yt_cat videos {chat_id}",
                     style=get_style("videos"),
-                    icon_custom_emoji_id="5366477429223209600",
                 ),
             ],
         ]
@@ -192,7 +167,6 @@ class Inline:
                         text="Open Direct Link",
                         url=link,
                         style=enums.ButtonStyle.SUCCESS,
-                        icon_custom_emoji_id="5321505140199418151",
                     )
                 ]
             )
@@ -202,7 +176,6 @@ class Inline:
                     text="Back to Player",
                     callback_data=f"yt_menu_back {chat_id}",
                     style=enums.ButtonStyle.SUCCESS,
-                    icon_custom_emoji_id="6084584420537275358",
                 )
             ]
         )
@@ -218,24 +191,21 @@ class Inline:
                         text=_lang["back"],
                         callback_data="help back",
                         style=enums.ButtonStyle.DANGER,
-                        icon_custom_emoji_id="6084584420537275358",
                     ),
                     self.ikb(
                         text=_lang["close"],
                         callback_data="help close",
                         style=enums.ButtonStyle.DANGER,
-                        icon_custom_emoji_id="6084584420537275358",
                     ),
                 ]
             ]
         else:
-            cbs = ["admins", "auth", "blist", "lang", "ping", "play", "queue", "stats", "sudo"]
+            cbs = ["admins", "auth", "blist", "lang", "ping", "play", "queue", "stats", "sudo", "download", "clone"]
             buttons = [
                 self.ikb(
-                    text=_lang[f"help_{i}"],
+                    text=_lang.get(f"help_{i}", cb.capitalize()),
                     callback_data=f"help {cb}",
                     style=enums.ButtonStyle.DANGER,
-                    icon_custom_emoji_id="6327602766885690261",
                 )
                 for i, cb in enumerate(cbs)
             ]
@@ -251,7 +221,6 @@ class Inline:
                 text=f"{name} ({code})",
                 callback_data=f"lang_change {code}",
                 style=enums.ButtonStyle.SUCCESS,
-                icon_custom_emoji_id="6327829008582974671",
             )
             for code, name in langs.items()
         ]
@@ -263,7 +232,6 @@ class Inline:
             text=text,
             url=config.SUPPORT_CHAT,
             style=enums.ButtonStyle.DANGER,
-            icon_custom_emoji_id="5422647595635866664",
         )]])
 
     def play_queued(
@@ -316,28 +284,54 @@ class Inline:
         )
 
     def start_key(
-        self, lang: dict, private: bool = False
+        self, lang: dict, private: bool = False, bot_username: str = None
     ) -> types.InlineKeyboardMarkup:
+        un = bot_username or app.username or "bot"
         rows = [
             [
                 self.ikb(
-                    text=f"{lang['add_me']} ✦",
-                    url=f"https://t.me/{app.username}?startgroup=true",
+                    text=f"{lang['add_me']}",
+                    url=f"https://t.me/{un}?startgroup=true",
                     style=enums.ButtonStyle.DANGER,
-                    icon_custom_emoji_id="5469798743043764619",
                 )
             ],
         ]
         if private:
             rows += [
-                [self.ikb(text=lang["help"], callback_data="help", style=enums.ButtonStyle.DANGER, icon_custom_emoji_id="5471921006643800598")],
                 [
-                    self.ikb(text=lang["support"], url=config.SUPPORT_CHAT, style=enums.ButtonStyle.DANGER, icon_custom_emoji_id="5422782960120134635"),
-                    self.ikb(text=lang["channel"], url=config.SUPPORT_CHANNEL, style=enums.ButtonStyle.DANGER, icon_custom_emoji_id="5422357698228290320"),
+                    self.ikb(text="Create Your Own Music Bot", callback_data="clone_main_menu", style=enums.ButtonStyle.SUCCESS),
+                ],
+                [
+                    self.ikb(text=lang["help"], callback_data="help", style=enums.ButtonStyle.DANGER),
+                ],
+                [
+                    self.ikb(text=lang["support"], url=config.SUPPORT_CHAT, style=enums.ButtonStyle.DANGER),
+                    self.ikb(text=lang["channel"], url=config.SUPPORT_CHANNEL, style=enums.ButtonStyle.DANGER),
                 ]
             ]
         else:
-            rows += [[self.ikb(text=lang["language"], callback_data="language", style=enums.ButtonStyle.DANGER, icon_custom_emoji_id="5422826721541914133")]]
+            rows += [[self.ikb(text=lang["language"], callback_data="language", style=enums.ButtonStyle.DANGER)]]
+        return self.ikm(rows)
+
+    def clone_panel_markup(self) -> types.InlineKeyboardMarkup:
+        rows = [
+            [
+                self.ikb(text="How to Clone Bot", callback_data="clone_guide", style=enums.ButtonStyle.SUCCESS),
+                self.ikb(text="My Cloned Bots", callback_data="clone_my_bots", style=enums.ButtonStyle.SUCCESS),
+            ],
+            [
+                self.ikb(text="Generate Session String", callback_data="clone_gen_session", style=enums.ButtonStyle.PRIMARY),
+                self.ikb(text="Set Assistant", callback_data="clone_set_assistant", style=enums.ButtonStyle.PRIMARY),
+            ],
+            [
+                self.ikb(text="Set Owner ID", callback_data="clone_set_owner", style=enums.ButtonStyle.PRIMARY),
+                self.ikb(text="Set Log Group", callback_data="clone_set_log", style=enums.ButtonStyle.PRIMARY),
+            ],
+            [
+                self.ikb(text="Remove Clone Bot", callback_data="clone_remove_bot", style=enums.ButtonStyle.DANGER),
+                self.ikb(text="Back to Main Menu", callback_data="clone_back_start", style=enums.ButtonStyle.DANGER),
+            ],
+        ]
         return self.ikm(rows)
 
     def yt_key(self, link: str) -> types.InlineKeyboardMarkup:
@@ -349,7 +343,6 @@ class Inline:
                         text="YouTube",
                         url=link,
                         style=enums.ButtonStyle.DANGER,
-                        icon_custom_emoji_id="5321505140199418151",
                     ),
                 ],
             ]
@@ -359,10 +352,9 @@ class Inline:
         return self.ikm([
             [
                 self.ikb(
-                    text="𝗡𝗘𝗧𝗪𝗢𝗥𝗞 𝗦𝗧𝗔𝗧𝗦",
+                    text="NETWORK STATS",
                     callback_data="stats_net",
                     style=enums.ButtonStyle.SUCCESS,
-                    icon_custom_emoji_id="5411400970368216901",
                 )
             ]
         ])
@@ -371,16 +363,14 @@ class Inline:
         return self.ikm([
             [
                 self.ikb(
-                    text="𝗕𝗮𝗰𝗸",
+                    text="Back",
                     callback_data="stats_back",
                     style=enums.ButtonStyle.PRIMARY,
-                    icon_custom_emoji_id="6084584420537275358",
                 ),
                 self.ikb(
-                    text="𝗖𝗹𝗼𝘀𝗲",
+                    text="Close",
                     callback_data="stats_close",
                     style=enums.ButtonStyle.PRIMARY,
-                    icon_custom_emoji_id="6084584420537275358",
                 ),
             ]
         ])

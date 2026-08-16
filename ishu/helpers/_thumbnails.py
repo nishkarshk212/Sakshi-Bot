@@ -109,14 +109,6 @@ class Thumbnail:
             bg_overlay = Image.new("RGBA", (W, H), (0, 0, 0, 140))
             bg = Image.alpha_composite(bg, bg_overlay)
 
-            # Draw Brand Header on Background
-            draw_bg = ImageDraw.Draw(bg)
-            brand_text = "Nishkarsh Kumar"
-
-            brand_bbox = draw_bg.textbbox((0, 0), brand_text, font=font_brand)
-            brand_w = brand_bbox[2] - brand_bbox[0]
-            draw_bg.text((W - brand_w - 60, 40), brand_text, fill=(255, 255, 255, 220), font=font_brand)
-
             # --- 2. CARD COMPONENT ---
             card_w, card_h = 900, 560
             card_x = (W - card_w) // 2

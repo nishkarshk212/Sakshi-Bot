@@ -59,6 +59,21 @@ def _bg_download(media) -> None:
 _recent_ids: "dict[int, list[str]]" = {}
 _recent_titles: "dict[int, list[str]]" = {}
 
+
+def get_pyro_client(call_client):
+    """Safely extract Pyrogram Client from PyTgCalls or Client object."""
+    if not call_client:
+        return app
+    if hasattr(call_client, "_app"):
+        app_obj = call_client._app
+        if hasattr(app_obj, "_bind_client"):
+            bind_obj = app_obj._bind_client
+            if hasattr(bind_obj, "_app"):
+                return bind_obj._app
+            return bind_obj
+        return app_obj
+    return call_client
+
 def _normalize_title(title: str | None) -> str:
     if not title:
         return ""
@@ -266,11 +281,38 @@ class TgCall(PyTgCalls):
                     ),
                     ffmpeg_parameters=f"-ss {seek_time}" if seek_time > 1 else None,
                 )
-                await client.play(
-                    chat_id=chat_id,
-                    stream=stream,
-                    config=types.GroupCallConfig(auto_start=True),
-                )
+                pyro_client = get_pyro_client(client)
+                try:
+                    await pyro_client.get_chat(chat_id)
+                except Exception as peer_err:
+                    logger.warning(f"Assistant client peer missing for chat {chat_id}: {peer_err}")
+                    try:
+                        invitelink = await app.export_chat_invite_link(chat_id)
+                        await pyro_client.join_chat(invitelink)
+                    except Exception as join_err:
+                        logger.warning(f"Assistant auto-join failed for {chat_id}: {join_err}")
+
+                try:
+                    await client.play(
+                        chat_id=chat_id,
+                        stream=stream,
+                        config=types.GroupCallConfig(auto_start=True),
+                    )
+                except Exception as play_err:
+                    if "ChannelInvalid" in str(play_err) or "CHANNEL_INVALID" in str(play_err):
+                        logger.warning(f"client.play peer error in {chat_id}: {play_err}. Re-resolving via join_chat...")
+                        try:
+                            invitelink = await app.export_chat_invite_link(chat_id)
+                            await pyro_client.join_chat(invitelink)
+                            await client.play(
+                                chat_id=chat_id,
+                                stream=stream,
+                                config=types.GroupCallConfig(auto_start=True),
+                            )
+                        except Exception as retry_err:
+                            raise retry_err
+                    else:
+                        raise play_err
 
             if not seek_time:
                 media.time = 1
@@ -324,14 +366,7 @@ class TgCall(PyTgCalls):
                         reply_markup=keyboard,
                     )
 
-                try:
-                    await app.send_message(
-                        chat_id=chat_id,
-                        text="<emoji id=6339116259946272330>🦢</emoji> <emoji id=6339126920055099241>😍</emoji> <emoji id=6339366544870478487>🦢</emoji>",
-                        parse_mode=enums.ParseMode.HTML,
-                    )
-                except Exception:
-                    pass
+
 
                 media.message_id = message.id
                 if await db.get_autoplay(chat_id) and not queue.get_next(chat_id, check=True):
@@ -352,6 +387,20 @@ class TgCall(PyTgCalls):
         except RTMPStreamingUnsupported:
             await self.stop(chat_id)
             await message.edit_text(_lang["error_rtmp"])
+        except Exception as err:
+            logger.error(f"Playback exception in chat {chat_id}: {err}")
+            await self.stop(chat_id)
+            try:
+                if "ChannelInvalid" in str(err) or "CHANNEL_INVALID" in str(err):
+                    await message.edit_text(
+                        "❌ <b>Playback Error:</b> <code>CHANNEL_INVALID</code>\n\n"
+                        "<i>Please make sure the Assistant account (userbot) is present in this group and promoted to admin!</i>"
+                    )
+                else:
+                    await message.edit_text(f"❌ <b>Playback Error:</b> <code>{err}</code>")
+            except Exception:
+                pass
+            await self.play_next(chat_id)
 
 
     async def replay(self, chat_id: int) -> None:

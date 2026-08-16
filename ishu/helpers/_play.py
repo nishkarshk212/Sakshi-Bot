@@ -56,11 +56,11 @@ def checkUB(play):
                 # let the user retry instead of crashing the whole handler.
                 try:
                     member = await app.get_chat_member(chat_id, client.id)
-                except (TimeoutError, asyncio.TimeoutError):
+                except Exception as err:
                     logger.warning(
-                        "get_chat_member timed out for assistant %s in %s; "
+                        "get_chat_member error (%s) for assistant %s in %s; "
                         "skipping membership check this attempt.",
-                        client.id, chat_id,
+                        err, client.id, chat_id,
                     )
                     member = None
 

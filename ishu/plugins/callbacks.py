@@ -299,7 +299,9 @@ async def _yt_menu_back_cb(_, query: types.CallbackQuery):
 async def _help(_, query: types.CallbackQuery):
     data = query.data.split()
     if len(data) == 1:
-        return await query.answer(url=f"https://t.me/{app.username}?start=help")
+        bot_un = getattr(getattr(query, "_client", None), "me", None)
+        username = getattr(bot_un, "username", None) or app.username or "bot"
+        return await query.answer(url=f"https://t.me/{username}?start=help")
 
     if data[1] == "back":
         return await query.edit_message_text(
@@ -369,13 +371,13 @@ async def _stats_cb(_, query: types.CallbackQuery):
             except Exception:
                 pass
         text = (
-            "<blockquote><b><emoji id=5231065262228250587>🌐</emoji> ʟ ɪ ʟ ʏ  s ʏ s ᴛ є ϻ\n"
+            "<blockquote><b>SYSTEM STATUS\n"
             "──────────────────\n"
-            "<emoji id=5431757423134121353>✅</emoji> s ᴛ ᴧ ᴛ υ s : σηʟɪηє ᴧηᴅ ʀєᴧᴅʏ\n"
-            "<emoji id=5345905193005371012>⚡</emoji> ᴘ ɪ η ɢ : υʟᴛʀᴧ ғᴧsᴛ\n"
-            f"<emoji id=5363992034728229166>✨</emoji> ᴄ ʜ ᴧ ᴛ s : {admin_count}\n"
+            "STATUS: ONLINE AND READY\n"
+            "PING: FAST\n"
+            f"CHATS: {admin_count}\n"
             "──────────────────\n"
-            "<emoji id=6131977542107665315>🔥</emoji> ᴘσᴡєʀєᴅ ʙʏ : ʟ ɪ ʟ ʏ  ϻ υ s ɪ ᴄ</b></blockquote>"
+            f"POWERED BY: {app.name}</b></blockquote>"
         )
         try:
             await query.edit_message_caption(
@@ -397,17 +399,17 @@ async def _stats_cb(_, query: types.CallbackQuery):
         play_limit = config.DURATION_LIMIT // 60
         
         text = (
-            "<blockquote><b><emoji id=5364040533498932357>💎</emoji> ʟɪʟʏ  ϻ ᴧ ɪ η ғ ʀ ᴧ ϻ є\n"
+            f"<blockquote><b>{app.name} MAINFRAME\n"
             "──────────────────\n"
-            f"<emoji id=5855037359371851292>👑</emoji> ᴧ s s ɪ s ᴛ ᴧ η ᴛ s : {assistants_count}\n"
-            f"<emoji id=5424857974784925603>🚫</emoji> ʙ ʟ σ ᴄ ᴋ є ᴅ : {blocked_count}\n"
-            f"<emoji id=5231065262228250587>🌐</emoji> ᴄ ʜ ᴧ ᴛ s : {chats_count}\n"
-            f"<emoji id=5350444080084033572>✨</emoji> υ s є ʀ s : {users_count}\n"
-            f"<emoji id=5345905193005371012>⚡</emoji> ϻ σ ᴅ υ ʟ є s : {modules_count}\n"
-            f"<emoji id=5260553279321944543>😈</emoji> s υ ᴅ σ є ʀ s : {sudoers_count}\n"
+            f"ASSISTANTS: {assistants_count}\n"
+            f"BLOCKED: {blocked_count}\n"
+            f"CHATS: {chats_count}\n"
+            f"USERS: {users_count}\n"
+            f"MODULES: {modules_count}\n"
+            f"SUDOERS: {sudoers_count}\n"
             "──────────────────\n"
-            f"<emoji id=6131874750655369599>🔼</emoji> ᴧ υ ᴛ σ  ʟ є ᴧ ᴠ є : {auto_leave}\n"
-            f"<emoji id=6131977542107665315>🔥</emoji> ᴘ ʟ ᴧ ʏ  ʟ ɪ ϻ ɪ ᴛ : {play_limit} ϻɪηs</b></blockquote>"
+            f"AUTO LEAVE: {auto_leave}\n"
+            f"PLAY LIMIT: {play_limit} mins</b></blockquote>"
         )
         try:
             await query.edit_message_caption(
@@ -417,3 +419,115 @@ async def _stats_cb(_, query: types.CallbackQuery):
             )
         except Exception:
             pass
+
+
+@app.on_callback_query(filters.regex("^clone_") & ~app.bl_users)
+async def clone_callbacks(_, query: types.CallbackQuery):
+    data = query.data
+    user_id = query.from_user.id
+    
+    async def safe_edit(txt: str, markup=None):
+        if query.message and (query.message.photo or query.message.video or query.message.animation):
+            try:
+                return await query.edit_message_caption(caption=txt, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+            except Exception:
+                return await query.message.edit_caption(caption=txt, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+        else:
+            try:
+                return await query.edit_message_text(text=txt, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+            except Exception:
+                return await query.message.edit_text(text=txt, reply_markup=markup, parse_mode=enums.ParseMode.HTML)
+
+    if data in ["clone_main_menu", "clone_start"]:
+        text = (
+            "<b>Clone Bot Settings & Management Panel</b>\n\n"
+            "Create and manage your own custom music & downloader bot for free!\n"
+            "Select an option from the buttons below to configure your clone bot settings."
+        )
+        await safe_edit(text, buttons.clone_panel_markup())
+    elif data == "clone_guide":
+        text = (
+            "<b>How to Clone Your Own Music Bot:</b>\n\n"
+            "1. Open @BotFather on Telegram and send <code>/newbot</code>.\n"
+            "2. Enter a name and username for your new bot.\n"
+            "3. Copy your API Bot Token (e.g., <code>123456789:ABCdef...</code>).\n"
+            "4. Send command in chat: <code>/clone &lt;bot_token&gt;</code>\n\n"
+            "Your clone bot will start instantly!"
+        )
+        await safe_edit(text, buttons.clone_panel_markup())
+    elif data == "clone_my_bots":
+        clones = await db.get_user_clones(user_id)
+        if not clones:
+            text = (
+                "<b>You haven't cloned any bots yet!</b>\n\n"
+                "Use <code>/clone &lt;bot_token&gt;</code> to create your first clone bot."
+            )
+        else:
+            text = "<b>Your Cloned Bots & Settings:</b>\n\n"
+            for idx, c in enumerate(clones, 1):
+                un = c.get("username", "bot")
+                nm = c.get("name", "Music Bot")
+                tok = c.get("bot_token", "")
+                own_id = c.get("owner_id", user_id)
+                lg = c.get("log_group") or "Not set"
+                ass_un = c.get("assistant_username") or "Default"
+                short_tok = tok[:10] + "..." if tok else "N/A"
+                text += (
+                    f"<b>{idx}.</b> {nm} (@{un})\n"
+                    f"   • Token: <code>{short_tok}</code>\n"
+                    f"   • Owner ID: <code>{own_id}</code>\n"
+                    f"   • Log Group: <code>{lg}</code>\n"
+                    f"   • Assistant: @{ass_un}\n\n"
+                )
+        await safe_edit(text, buttons.clone_panel_markup())
+    elif data == "clone_set_owner":
+        text = (
+            "<b>Set Clone Bot Owner ID</b>\n\n"
+            "To set or change the Owner User ID for your clone bot, use command:\n"
+            "<code>/setowner &lt;bot_username&gt; &lt;owner_id&gt;</code>\n\n"
+            "<b>Example:</b>\n<code>/setowner MyMusicBot 7408854697</code>"
+        )
+        await safe_edit(text, buttons.clone_panel_markup())
+    elif data == "clone_set_log":
+        text = (
+            "<b>Set Clone Bot Log Group</b>\n\n"
+            "To set a custom Log Supergroup/Channel for your clone bot, use command:\n"
+            "<code>/setloggroup &lt;bot_username&gt; &lt;log_group_id&gt;</code>\n\n"
+            "<b>Example:</b>\n<code>/setloggroup MyMusicBot -1001234567890</code>"
+        )
+        await safe_edit(text, buttons.clone_panel_markup())
+    elif data == "clone_gen_session":
+        text = (
+            "<b>Generate Pyrogram v2 Session String</b>\n\n"
+            "You can generate a session string right here in this bot!\n\n"
+            "Click command: <code>/gensession</code>\n\n"
+            "Follow the 3 quick steps:\n"
+            "1. Send your Telegram phone number.\n"
+            "2. Enter the OTP code received on Telegram.\n"
+            "3. Enter 2FA Password (if enabled).\n\n"
+            "Your Pyrogram v2 Session String will be generated instantly!"
+        )
+        await safe_edit(text, buttons.clone_panel_markup())
+    elif data == "clone_set_assistant":
+        text = (
+            "<b>Set Clone Bot Voice Chat Assistant</b>\n\n"
+            "To attach a dedicated Pyrogram Assistant session string to your clone bot, use command:\n"
+            "<code>/setassistant &lt;bot_username&gt; [session_string]</code>\n\n"
+            "<i>Note: If no session string is provided, the default assistant will be auto-generated and set!</i>"
+        )
+        await safe_edit(text, buttons.clone_panel_markup())
+    elif data == "clone_remove_bot":
+        text = (
+            "<b>Remove & Stop Clone Bot</b>\n\n"
+            "To delete and stop a cloned bot, use command:\n"
+            "<code>/rmclone &lt;bot_username_or_token&gt;</code>"
+        )
+        await safe_edit(text, buttons.clone_panel_markup())
+    elif data == "clone_back_start":
+        user_mention = f'<a href="tg://user?id={query.from_user.id}">{query.from_user.first_name}</a>'
+        b_un = getattr(bot_un, "username", None) or getattr(getattr(bot_un, "me", None), "username", None) or app.username
+        b_nm = getattr(bot_un, "name", None) or getattr(getattr(bot_un, "me", None), "first_name", None) or app.name
+        bot_mention = f'<a href="https://t.me/{b_un}">{b_nm}</a>'
+        _lang = await lang.get_lang(query.message.chat.id)
+        start_text = _lang["start_pm"].format(user_mention, bot_mention)
+        await safe_edit(start_text, buttons.start_key(_lang, private=True, bot_username=b_un))

@@ -162,15 +162,16 @@ class MongoDB:
         return anon.clients[self.assistant[chat_id] - 1]
 
     async def get_client(self, chat_id: int):
+        from ishu import userbot
         if chat_id not in self.assistant:
             await self.get_assistant(chat_id)
 
-        num = self.assistant[chat_id]
+        num = self.assistant.get(chat_id, 1)
         if num > len(userbot.clients):
             num = await self.set_assistant(chat_id)
             self.assistant[chat_id] = num
 
-        return {1: userbot.one, 2: userbot.two, 3: userbot.three}.get(num)
+        return {1: userbot.one, 2: userbot.two, 3: userbot.three}.get(num, userbot.one)
 
 
     # ULTRA-FAST HYBRID MUSIC CACHE METHODS
@@ -786,6 +787,73 @@ class MongoDB:
             await self.storage_db.assistant_pm_config.delete_one({"_id": "default"})
         except Exception as e:
             logger.warning("reset_assistant_pm_config failed: %s", e)
+
+    # ── Clone Bot DB Methods ──────────────────────────────────────────────────
+    async def add_clone(
+        self,
+        bot_token: str,
+        user_id: int,
+        username: str,
+        name: str,
+        session_string: str = None,
+        assistant_id: int = None,
+        assistant_username: str = None,
+        owner_id: int = None,
+        log_group: int = None,
+    ) -> None:
+        try:
+            update_data = {
+                "user_id": user_id,
+                "owner_id": owner_id or user_id,
+                "username": username,
+                "name": name,
+                "updated_at": time(),
+            }
+            if log_group is not None:
+                update_data["log_group"] = log_group
+            if session_string is not None:
+                update_data["session_string"] = session_string
+            if assistant_id is not None:
+                update_data["assistant_id"] = assistant_id
+            if assistant_username is not None:
+                update_data["assistant_username"] = assistant_username
+
+            await self.db.clones.update_one(
+                {"bot_token": bot_token},
+                {"$set": update_data},
+                upsert=True,
+            )
+        except Exception as e:
+            logger.warning("add_clone failed: %s", e)
+
+    async def remove_clone(self, query_str: str) -> bool:
+        try:
+            res = await self.db.clones.delete_one({"$or": [{"bot_token": query_str}, {"username": query_str.lstrip("@")}]})
+            return res.deleted_count > 0
+        except Exception as e:
+            logger.warning("remove_clone failed: %s", e)
+            return False
+
+    async def get_clones(self) -> list[dict]:
+        try:
+            return await self.db.clones.find().to_list(length=1000)
+        except Exception as e:
+            logger.warning("get_clones failed: %s", e)
+            return []
+
+    async def get_user_clones(self, user_id: int) -> list[dict]:
+        try:
+            return await self.db.clones.find({"user_id": user_id}).to_list(length=100)
+        except Exception as e:
+            logger.warning("get_user_clones failed: %s", e)
+            return []
+
+    async def get_clone_by_token(self, bot_token: str) -> dict | None:
+        try:
+            return await self.db.clones.find_one({"bot_token": bot_token})
+        except Exception as e:
+            logger.warning("get_clone_by_token failed: %s", e)
+            return None
 
     async def load_cache(self) -> None:
         doc = await self.cache.find_one({"_id": "migrated"})

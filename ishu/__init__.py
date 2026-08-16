@@ -67,6 +67,8 @@ thumb = Thumbnail()
 from ishu.core.calls import TgCall
 anon = TgCall()
 
+from ishu.helpers import font
+
 
 async def stop() -> None:
     logger.info("Stopping...")
