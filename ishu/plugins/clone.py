@@ -9,7 +9,8 @@ async def clone_bot_handler(_, m: types.Message):
     Clone this music bot using your own Bot Token, Log Group & Assistant Session!
     Usage: /clone <bot_token> [log_group_id] [assistant_session]
     """
-    if len(m.command) < 2:
+    args = m.text.split()
+    if len(args) < 2 or ":" not in args[1]:
         return await m.reply_text(
             "<b>Clone Music Bot Feature</b>\n\n"
             "You can create your own clone of this music bot for free!\n\n"
