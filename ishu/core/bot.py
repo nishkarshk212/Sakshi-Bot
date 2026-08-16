@@ -43,7 +43,7 @@ class SudoersFilter(pyrogram.filters.Filter):
     def __init__(self, bot):
         self.bot = bot
 
-    async def __call__(self, _, client, update):
+    async def __call__(self, client, update):
         user = getattr(update, "from_user", None) or getattr(update, "sender_chat", None)
         if not user:
             return False
