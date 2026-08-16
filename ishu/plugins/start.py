@@ -117,16 +117,15 @@ async def start(client, message: types.Message):
         except Exception:
             pass
 
+    b_id = getattr(client, "id", None) or getattr(getattr(client, "me", None), "id", None)
     if private:
-        if await db.is_user(message.from_user.id):
-            return
-        await utils.send_log(message)
-        await db.add_user(message.from_user.id)
+        await db.add_user(message.from_user.id, bot_id=b_id)
+        if not await db.is_user(message.from_user.id):
+            await utils.send_log(message)
     else:
-        if await db.is_chat(message.chat.id):
-            return
-        await utils.send_log(message, True)
-        await db.add_chat(message.chat.id, message.chat.title)
+        await db.add_chat(message.chat.id, message.chat.title, bot_id=b_id)
+        if not await db.is_chat(message.chat.id):
+            await utils.send_log(message, True)
 
 
 
@@ -236,8 +235,9 @@ async def slash_help(_, message: types.Message):
 # reliable way to know a group is to observe activity in it. Low priority
 # (group=99) so it never precedes command/service handlers.
 @app.on_message(filters.group & ~app.bl_users, group=99)
-async def _record_group(_, message: types.Message):
+async def _record_group(client, message: types.Message):
     chat = message.chat
     if chat.type not in (enums.ChatType.GROUP, enums.ChatType.SUPERGROUP):
         return
-    await db.add_chat(chat.id, getattr(chat, "title", None))
+    b_id = getattr(client, "id", None) or getattr(getattr(client, "me", None), "id", None)
+    await db.add_chat(chat.id, getattr(chat, "title", None), bot_id=b_id)

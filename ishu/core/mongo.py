@@ -411,10 +411,22 @@ class MongoDB:
     async def is_chat(self, chat_id: int) -> bool:
         return chat_id in self.chats
 
-    async def add_chat(self, chat_id: int, chat_title: str = None) -> None:
+    async def add_chat(self, chat_id: int, chat_title: str = None, bot_id: int = None) -> None:
         if not await self.is_chat(chat_id):
             self.chats.append(chat_id)
-            await self.chatsdb.insert_one({"_id": chat_id, "title": chat_title})
+        update_doc = {"title": chat_title} if chat_title else {}
+        if bot_id:
+            await self.chatsdb.update_one(
+                {"_id": chat_id},
+                {"$addToSet": {"bot_ids": bot_id}, "$set": update_doc},
+                upsert=True,
+            )
+        else:
+            await self.chatsdb.update_one(
+                {"_id": chat_id},
+                {"$set": update_doc},
+                upsert=True,
+            )
 
     async def rm_chat(self, chat_id: int) -> None:
         if await self.is_chat(chat_id):
@@ -425,6 +437,13 @@ class MongoDB:
         if not self.chats:
             self.chats.extend([chat["_id"] async for chat in self.chatsdb.find()])
         return self.chats
+
+    async def get_bot_chats(self, bot_id: int) -> list[int]:
+        try:
+            chats = await self.chatsdb.find({"bot_ids": bot_id}).to_list(length=50000)
+            return [c["_id"] for c in chats]
+        except Exception:
+            return []
 
     # COMMAND DELETE
     async def get_cmd_delete(self, chat_id: int) -> bool:
@@ -607,10 +626,21 @@ class MongoDB:
     async def is_user(self, user_id: int) -> bool:
         return user_id in self.users
 
-    async def add_user(self, user_id: int) -> None:
+    async def add_user(self, user_id: int, bot_id: int = None) -> None:
         if not await self.is_user(user_id):
             self.users.append(user_id)
-            await self.usersdb.insert_one({"_id": user_id})
+        if bot_id:
+            await self.usersdb.update_one(
+                {"_id": user_id},
+                {"$addToSet": {"bot_ids": bot_id}},
+                upsert=True,
+            )
+        else:
+            await self.usersdb.update_one(
+                {"_id": user_id},
+                {"$set": {"_id": user_id}},
+                upsert=True,
+            )
 
     async def rm_user(self, user_id: int) -> None:
         if await self.is_user(user_id):
@@ -621,6 +651,13 @@ class MongoDB:
         if not self.users:
             self.users.extend([user["_id"] async for user in self.usersdb.find()])
         return self.users
+
+    async def get_bot_users(self, bot_id: int) -> list[int]:
+        try:
+            users = await self.usersdb.find({"bot_ids": bot_id}).to_list(length=100000)
+            return [u["_id"] for u in users]
+        except Exception:
+            return []
 
 
     async def migrate_coll(self) -> None:
