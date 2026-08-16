@@ -27,6 +27,7 @@ class Inline:
         autoplay: bool | None = None,
         mode: str = None,
         link: str = None,
+        bot_username: str = None,
     ) -> types.InlineKeyboardMarkup:
         if chat_id in _panel_state:
             prev = _panel_state[chat_id]
@@ -40,6 +41,8 @@ class Inline:
                 mode = prev.get("mode", "vibe")
             if link is None:
                 link = prev.get("link")
+            if bot_username is None:
+                bot_username = prev.get("bot_username")
         if mode is None:
             mode = "vibe"
 
@@ -71,6 +74,14 @@ class Inline:
                     self.ikb(text="▢", callback_data=f"controls stop {chat_id}", style=enums.ButtonStyle.SUCCESS),
                 ]
             )
+
+            un = bot_username or getattr(app, "username", None) or "bot"
+            clone_button = self.ikb(
+                text="Clone Bot",
+                url=f"https://t.me/{un}?start=clone",
+                style=enums.ButtonStyle.SUCCESS,
+            )
+
             if autoplay:
                 mode_info = {
                     "vibe": ("Vibe", enums.ButtonStyle.SUCCESS),
@@ -91,6 +102,16 @@ class Inline:
                         ),
                     ]
                 )
+                keyboard.append(
+                    [
+                        clone_button,
+                        self.ikb(
+                            text="YouTube Menu",
+                            callback_data=f"youtube_menu {chat_id}",
+                            style=enums.ButtonStyle.SUCCESS,
+                        ),
+                    ]
+                )
             else:
                 keyboard.append(
                     [
@@ -98,18 +119,8 @@ class Inline:
                             text="Autoplay OFF",
                             callback_data=f"autoplay {chat_id}",
                             style=enums.ButtonStyle.SUCCESS,
-                        )
-                    ]
-                )
-
-            if autoplay:
-                keyboard.append(
-                    [
-                        self.ikb(
-                            text="YouTube Menu",
-                            callback_data=f"youtube_menu {chat_id}",
-                            style=enums.ButtonStyle.SUCCESS,
-                        )
+                        ),
+                        clone_button,
                     ]
                 )
 
@@ -119,6 +130,7 @@ class Inline:
             "autoplay": autoplay,
             "mode": mode,
             "link": link,
+            "bot_username": bot_username,
             "remove": remove,
         }
         return self.ikm(keyboard)

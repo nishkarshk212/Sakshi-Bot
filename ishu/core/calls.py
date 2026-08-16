@@ -344,11 +344,13 @@ class TgCall(PyTgCalls):
                 _panel_state[chat_id] = _panel_state.get(chat_id, {})
                 _panel_state[chat_id]["playing_caption"] = text
 
+                b_un = getattr(client, "username", None) or getattr(getattr(client, "me", None), "username", None) or app.username
                 keyboard = buttons.controls(
                     chat_id,
                     autoplay=await db.get_autoplay(chat_id),
                     mode=await db.get_autoplay_mode(chat_id),
                     link=media.url if (isinstance(media, Track) and getattr(media, "url", None)) else None,
+                    bot_username=b_un,
                 )
 
                 if _thumb:

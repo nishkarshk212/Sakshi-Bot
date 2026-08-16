@@ -44,8 +44,13 @@ async def start(client, message: types.Message):
     if message.from_user.id in app.bl_users and message.from_user.id not in db.notified:
         return await message.reply_text(message.lang["bl_user_notify"])
 
-    if len(message.command) > 1 and message.command[1] == "help":
-        return await _help(client, message)
+    if len(message.command) > 1:
+        param = message.command[1].lower()
+        if param == "help":
+            return await _help(client, message)
+        elif param in ("clone", "clone_bot"):
+            from ishu.plugins.clone import clone_bot_handler
+            return await clone_bot_handler(client, message)
 
     bot_un = getattr(client, "username", None) or getattr(getattr(client, "me", None), "username", None) or app.username
     bot_nm = getattr(client, "name", None) or getattr(getattr(client, "me", None), "first_name", None) or app.name
