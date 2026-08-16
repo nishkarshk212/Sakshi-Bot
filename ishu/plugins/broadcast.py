@@ -8,6 +8,35 @@ from ishu import app, config, db, lang, logger
 broadcasting = asyncio.Lock()
 
 
+async def send_to_target(b_cli, chat_id: int, msg: types.Message, copy: bool = True):
+    """Send message to target chat_id using specific bot client b_cli."""
+    if not copy:
+        return await b_cli.forward_messages(chat_id=chat_id, from_chat_id=msg.chat.id, message_ids=msg.id)
+
+    try:
+        return await b_cli.copy_message(chat_id=chat_id, from_chat_id=msg.chat.id, message_id=msg.id, reply_markup=msg.reply_markup)
+    except Exception:
+        # Fallback to direct media / text send if b_cli cannot read from_chat_id
+        if msg.text:
+            return await b_cli.send_message(chat_id, msg.text, reply_markup=msg.reply_markup)
+        elif msg.photo:
+            return await b_cli.send_photo(chat_id, msg.photo.file_id, caption=msg.caption, reply_markup=msg.reply_markup)
+        elif msg.audio:
+            return await b_cli.send_audio(chat_id, msg.audio.file_id, caption=msg.caption, reply_markup=msg.reply_markup)
+        elif msg.video:
+            return await b_cli.send_video(chat_id, msg.video.file_id, caption=msg.caption, reply_markup=msg.reply_markup)
+        elif msg.document:
+            return await b_cli.send_document(chat_id, msg.document.file_id, caption=msg.caption, reply_markup=msg.reply_markup)
+        elif msg.voice:
+            return await b_cli.send_voice(chat_id, msg.voice.file_id, caption=msg.caption, reply_markup=msg.reply_markup)
+        elif msg.animation:
+            return await b_cli.send_animation(chat_id, msg.animation.file_id, caption=msg.caption, reply_markup=msg.reply_markup)
+        elif msg.sticker:
+            return await b_cli.send_sticker(chat_id, msg.sticker.file_id)
+        else:
+            return await b_cli.send_message(chat_id, msg.text or msg.caption or "", reply_markup=msg.reply_markup)
+
+
 @app.on_message(filters.command(["broadcast", "gcast"]) & app.sudoers)
 @lang.language()
 async def _broadcast(client, message: types.Message):
@@ -74,13 +103,10 @@ async def _broadcast(client, message: types.Message):
                 if not b_users:
                     b_users.update(await db.get_users())
 
-            # Broadcast to group chats
+            # Broadcast to group chats using b_cli
             for chat in list(b_groups):
                 try:
-                    if copy:
-                        await msg.copy(chat, reply_markup=msg.reply_markup)
-                    else:
-                        await msg.forward(chat)
+                    await send_to_target(b_cli, chat, msg, copy=copy)
                     count += 1
                     await asyncio.sleep(0.15)
                 except errors.FloodWait as fw:
@@ -93,13 +119,10 @@ async def _broadcast(client, message: types.Message):
                         failed = open("errors.txt", "w")
                     failed.write(f"Chat {chat} - {ex}\n")
 
-            # Broadcast to PM users
+            # Broadcast to PM users using b_cli
             for user in list(b_users):
                 try:
-                    if copy:
-                        await msg.copy(user, reply_markup=msg.reply_markup)
-                    else:
-                        await msg.forward(user)
+                    await send_to_target(b_cli, user, msg, copy=copy)
                     ucount += 1
                     await asyncio.sleep(0.15)
                 except errors.FloodWait as fw:
