@@ -75,13 +75,6 @@ class Inline:
                 ]
             )
 
-            un = bot_username or getattr(app, "username", None) or "bot"
-            clone_button = self.ikb(
-                text="Clone Bot",
-                url=f"https://t.me/{un}?start=clone",
-                style=enums.ButtonStyle.SUCCESS,
-            )
-
             if autoplay:
                 mode_info = {
                     "vibe": ("Vibe", enums.ButtonStyle.SUCCESS),
@@ -104,7 +97,6 @@ class Inline:
                 )
                 keyboard.append(
                     [
-                        clone_button,
                         self.ikb(
                             text="YouTube Menu",
                             callback_data=f"youtube_menu {chat_id}",
@@ -119,8 +111,7 @@ class Inline:
                             text="Autoplay OFF",
                             callback_data=f"autoplay {chat_id}",
                             style=enums.ButtonStyle.SUCCESS,
-                        ),
-                        clone_button,
+                        )
                     ]
                 )
 
@@ -212,7 +203,7 @@ class Inline:
                 ]
             ]
         else:
-            cbs = ["admins", "auth", "blist", "lang", "ping", "play", "queue", "stats", "sudo", "download", "clone"]
+            cbs = ["admins", "auth", "blist", "lang", "ping", "play", "queue", "stats", "sudo", "download"]
             buttons = [
                 self.ikb(
                     text=_lang.get(f"help_{i}", cb.capitalize()),
@@ -311,9 +302,6 @@ class Inline:
         if private:
             rows += [
                 [
-                    self.ikb(text="Create Your Own Music Bot", callback_data="clone_main_menu", style=enums.ButtonStyle.SUCCESS),
-                ],
-                [
                     self.ikb(text=lang["help"], callback_data="help", style=enums.ButtonStyle.DANGER),
                 ],
                 [
@@ -323,27 +311,6 @@ class Inline:
             ]
         else:
             rows += [[self.ikb(text=lang["language"], callback_data="language", style=enums.ButtonStyle.DANGER)]]
-        return self.ikm(rows)
-
-    def clone_panel_markup(self) -> types.InlineKeyboardMarkup:
-        rows = [
-            [
-                self.ikb(text="How to Clone Bot", callback_data="clone_guide", style=enums.ButtonStyle.SUCCESS),
-                self.ikb(text="My Cloned Bots", callback_data="clone_my_bots", style=enums.ButtonStyle.SUCCESS),
-            ],
-            [
-                self.ikb(text="Generate Session String", callback_data="clone_gen_session", style=enums.ButtonStyle.PRIMARY),
-                self.ikb(text="Set Assistant", callback_data="clone_set_assistant", style=enums.ButtonStyle.PRIMARY),
-            ],
-            [
-                self.ikb(text="Set Owner ID", callback_data="clone_set_owner", style=enums.ButtonStyle.PRIMARY),
-                self.ikb(text="Set Log Group", callback_data="clone_set_log", style=enums.ButtonStyle.PRIMARY),
-            ],
-            [
-                self.ikb(text="Remove Clone Bot", callback_data="clone_remove_bot", style=enums.ButtonStyle.DANGER),
-                self.ikb(text="Back to Main Menu", callback_data="clone_back_start", style=enums.ButtonStyle.DANGER),
-            ],
-        ]
         return self.ikm(rows)
 
     def yt_key(self, link: str) -> types.InlineKeyboardMarkup:

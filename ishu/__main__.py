@@ -52,11 +52,6 @@ async def main():
 
     app.bl_users.update(await db.get_blacklisted())
 
-    logger.info(f"Loaded {len(app.sudoers)} sudo users.")
-
-    from ishu.core.clone import boot_all_clones
-    await boot_all_clones()
-
     await idle()
     await stop()
 

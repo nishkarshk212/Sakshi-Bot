@@ -52,18 +52,9 @@ class SudoersFilter(pyrogram.filters.Filter):
         if user_id == config.OWNER_ID or user_id in getattr(self.bot, "sudoer_ids", set()):
             return True
 
-        from ishu import app, db
+        from ishu import app
         if user_id in getattr(app, "sudoer_ids", set()):
             return True
-
-        bot_token = getattr(client, "bot_token", None)
-        if bot_token:
-            try:
-                clone = await db.get_clone_by_token(bot_token)
-                if clone and clone.get("owner_id") == user_id:
-                    return True
-            except Exception:
-                pass
 
         return False
 
@@ -132,11 +123,10 @@ class Bot(pyrogram.Client):
         try:
             await self.send_message(self.logger, "Bot Started")
             get = await self.get_chat_member(self.logger, self.id)
+            if get.status != pyrogram.enums.ChatMemberStatus.ADMINISTRATOR:
+                logger.warning("Please promote the bot as an admin in logger group.")
         except Exception as ex:
-            raise SystemExit(f"Bot has failed to access the log group: {self.logger}\nReason: {ex}")
-
-        if get.status != pyrogram.enums.ChatMemberStatus.ADMINISTRATOR:
-            raise SystemExit("Please promote the bot as an admin in logger group.")
+            logger.warning(f"Bot could not access log group {self.logger} yet (add bot to log group & promote admin): {ex}")
 
         await self.set_commands()
         logger.info(f"Bot started as @{self.username}")
