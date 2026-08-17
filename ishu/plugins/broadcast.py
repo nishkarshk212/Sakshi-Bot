@@ -42,12 +42,15 @@ async def _broadcast(client, message: types.Message):
                 if copy:
                     await msg.copy(chat, reply_markup=msg.reply_markup)
                 else:
-                    await msg.forward(chat)
+                    try:
+                        await msg.forward(chat)
+                    except Exception:
+                        await msg.copy(chat, reply_markup=msg.reply_markup)
                 count += 1
                 await asyncio.sleep(0.15)
             except errors.FloodWait as fw:
                 await asyncio.sleep(fw.value + 3)
-            except (errors.PeerIdInvalid, errors.ChannelInvalid, errors.ChatWriteForbidden, errors.UserNotParticipant):
+            except (errors.PeerIdInvalid, errors.ChannelInvalid, errors.ChatWriteForbidden, errors.UserNotParticipant, errors.ChatAdminRequired, errors.ChatRestricted):
                 continue
             except Exception as ex:
                 if not failed:
@@ -60,12 +63,15 @@ async def _broadcast(client, message: types.Message):
                 if copy:
                     await msg.copy(user, reply_markup=msg.reply_markup)
                 else:
-                    await msg.forward(user)
+                    try:
+                        await msg.forward(user)
+                    except Exception:
+                        await msg.copy(user, reply_markup=msg.reply_markup)
                 ucount += 1
                 await asyncio.sleep(0.15)
             except errors.FloodWait as fw:
                 await asyncio.sleep(fw.value + 3)
-            except (errors.PeerIdInvalid, errors.UserIsBlocked, errors.InputUserDeactivated):
+            except (errors.PeerIdInvalid, errors.UserIsBlocked, errors.InputUserDeactivated, errors.UserDeactivated, errors.UserDeactivatedBan):
                 continue
             except Exception as ex:
                 if not failed:
@@ -75,11 +81,11 @@ async def _broadcast(client, message: types.Message):
     text = message.lang["gcast_end"].format(count, ucount)
     if failed:
         failed.close()
-        await message.reply_document(
-            document="errors.txt",
-            caption=text,
-        )
         try:
+            await message.reply_document(
+                document="errors.txt",
+                caption=text,
+            )
             os.remove("errors.txt")
         except Exception:
             pass

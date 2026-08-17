@@ -409,33 +409,45 @@ class MongoDB:
 
     # CHAT METHODS
     async def is_chat(self, chat_id: int) -> bool:
-        return chat_id in self.chats
+        if chat_id in self.chats:
+            return True
+        doc = await self.chatsdb.find_one({"_id": chat_id})
+        if doc:
+            if chat_id not in self.chats:
+                self.chats.append(chat_id)
+            return True
+        return False
 
     async def add_chat(self, chat_id: int, chat_title: str = None, bot_id: int = None) -> None:
-        if not await self.is_chat(chat_id):
+        if chat_id not in self.chats:
             self.chats.append(chat_id)
-        update_doc = {"title": chat_title} if chat_title else {}
+        update_op = {}
+        if chat_title:
+            update_op["$set"] = {"title": chat_title}
         if bot_id:
+            update_op["$addToSet"] = {"bot_ids": bot_id}
+        if update_op:
             await self.chatsdb.update_one(
                 {"_id": chat_id},
-                {"$addToSet": {"bot_ids": bot_id}, "$set": update_doc},
+                update_op,
                 upsert=True,
             )
         else:
             await self.chatsdb.update_one(
                 {"_id": chat_id},
-                {"$set": update_doc},
+                {"$setOnInsert": {"_id": chat_id}},
                 upsert=True,
             )
 
     async def rm_chat(self, chat_id: int) -> None:
         if await self.is_chat(chat_id):
-            self.chats.remove(chat_id)
+            if chat_id in self.chats:
+                self.chats.remove(chat_id)
             await self.chatsdb.delete_one({"_id": chat_id})
 
     async def get_chats(self) -> list:
-        if not self.chats:
-            self.chats.extend([chat["_id"] async for chat in self.chatsdb.find()])
+        chats = [chat["_id"] async for chat in self.chatsdb.find()]
+        self.chats = list(set(chats))
         return self.chats
 
     async def get_bot_chats(self, bot_id: int) -> list[int]:
@@ -648,8 +660,8 @@ class MongoDB:
             await self.usersdb.delete_one({"_id": user_id})
 
     async def get_users(self) -> list:
-        if not self.users:
-            self.users.extend([user["_id"] async for user in self.usersdb.find()])
+        users = [user["_id"] async for user in self.usersdb.find()]
+        self.users = list(set(users))
         return self.users
 
     async def get_bot_users(self, bot_id: int) -> list[int]:
