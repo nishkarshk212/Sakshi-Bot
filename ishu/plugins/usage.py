@@ -11,20 +11,20 @@ from ishu.helpers import buttons
 
 # ── Usage text builder ────────────────────────────────────────────────────────
 
-USAGE_STATS = """<blockquote><b><emoji id=6338968354157499266>💎</emoji> ꜱ ᴏ ɴ ɢ  ᴜ ꜱ ᴀ ɢ ᴇ  ꜱ ᴛ ᴀ ᴛ ꜱ</b></blockquote>
+USAGE_STATS = """<blockquote><b> ꜱ ᴏ ɴ ɢ  ᴜ ꜱ ᴀ ɢ ᴇ  ꜱ ᴛ ᴀ ᴛ ꜱ</b></blockquote>
 
-<blockquote><b><emoji id=5274055917766202507>📅</emoji> <u>Today's Playback (Last 24 Hours)</u></b>
-<emoji id=5470135030393090150>🎵</emoji> <b>Audio Songs Played:</b> <code>{today_audio}</code>
-<emoji id=5321505140199418151>🎬</emoji> <b>Video Songs Played:</b> <code>{today_video}</code>
-<emoji id=6242538306773457661>⚡</emoji> <b>Total Played Today:</b> <code>{today_total}</code></blockquote>
+<blockquote><b> <u>Today's Playback (Last 24 Hours)</u></b>
+ <b>Audio Songs Played:</b> <code>{today_audio}</code>
+ <b>Video Songs Played:</b> <code>{today_video}</code>
+ <b>Total Played Today:</b> <code>{today_total}</code></blockquote>
 
-<blockquote><b><emoji id=5352629724516458059>🌐</emoji> <u>Overall Playback (All Time)</u></b>
-<emoji id=5463107823946717464>🎵</emoji> <b>Overall Audio Songs:</b> <code>{overall_audio}</code>
-<emoji id=5937999673510858217>🎬</emoji> <b>Overall Video Songs:</b> <code>{overall_video}</code>
-<emoji id=6228704973027284984>🔥</emoji> <b>Overall Total Songs:</b> <code>{overall_total}</code></blockquote>"""
+<blockquote><b> <u>Overall Playback (All Time)</u></b>
+ <b>Overall Audio Songs:</b> <code>{overall_audio}</code>
+ <b>Overall Video Songs:</b> <code>{overall_video}</code>
+ <b>Overall Total Songs:</b> <code>{overall_total}</code></blockquote>"""
 
 
-USAGE_AUDIO = """<emoji id=5470135030393090150>🎵</emoji> <u><b>Audio Play Commands</b></u>
+USAGE_AUDIO = """ <u><b>Audio Play Commands</b></u>
 
 <b>Basic:</b>
   <code>/play &lt;song name&gt;</code>
@@ -50,7 +50,7 @@ USAGE_AUDIO = """<emoji id=5470135030393090150>🎵</emoji> <u><b>Audio Play Com
 <b>Aliases:</b>  <code>/play</code>  •  <code>/playforce</code>"""
 
 
-USAGE_VIDEO = """<emoji id=5321505140199418151>🎬</emoji> <u><b>Video Play Commands</b></u>
+USAGE_VIDEO = """ <u><b>Video Play Commands</b></u>
 
 <b>Basic:</b>
   <code>/vplay &lt;song/video name&gt;</code>
@@ -74,7 +74,7 @@ USAGE_VIDEO = """<emoji id=5321505140199418151>🎬</emoji> <u><b>Video Play Com
 <b>Note:</b> Video mode requires the voice chat to support screen sharing."""
 
 
-USAGE_CONTROLS = """<emoji id=6242538306773457661>⚡</emoji> <u><b>Playback Control Commands</b></u>
+USAGE_CONTROLS = """ <u><b>Playback Control Commands</b></u>
 
 <b>In-chat Controls:</b>
   <code>/pause</code>      — Pause the current stream
@@ -94,7 +94,7 @@ USAGE_CONTROLS = """<emoji id=6242538306773457661>⚡</emoji> <u><b>Playback Con
   <code>/loop &lt;count&gt;</code>  — Loop the current song N times"""
 
 
-USAGE_EXAMPLES = """<emoji id=6228704973027284984>🔥</emoji> <u><b>Quick Examples</b></u>
+USAGE_EXAMPLES = """ <u><b>Quick Examples</b></u>
 
 <b>Play a song by name:</b>
   <code>/play Blinding Lights</code>
@@ -119,7 +119,7 @@ USAGE_EXAMPLES = """<emoji id=6228704973027284984>🔥</emoji> <u><b>Quick Examp
   Reply to any audio/video file with <code>/play</code> or <code>/vplay</code>"""
 
 
-USAGE_TIPS = """<emoji id=5463107823946717464>🎵</emoji> <u><b>Tips & Notes</b></u>
+USAGE_TIPS = """ <u><b>Tips & Notes</b></u>
 
 <b>Download & Streaming:</b>
   • Railway YT API — self-hosted YouTube proxy (Active)

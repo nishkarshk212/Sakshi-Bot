@@ -383,7 +383,7 @@ class HybridCacheManager:
             return {}
 
         try:
-            caption = f"🎵 **{title or video_id}**\n🆔 `{video_id}`"
+            caption = f" **{title or video_id}**\n `{video_id}`"
             if is_video:
                 msg = await app.send_video(channel_id, video=file_path, caption=caption)
                 file_id       = msg.video.file_id       if msg and msg.video else ""

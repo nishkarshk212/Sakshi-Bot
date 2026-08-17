@@ -312,7 +312,7 @@ async def _railway_download(video_id: str, media_type: str) -> str | None:
 
                     if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
                         _evict_disk_cache()
-                        logger.info("Railway YT API ✓ %s → %s", video_id, file_path)
+                        logger.info("Railway YT API  %s → %s", video_id, file_path)
                         return file_path
             except Exception as ep_err:
                 logger.warning("Railway YT API endpoint %s failed for %s: %s", endpoint, video_id, ep_err)

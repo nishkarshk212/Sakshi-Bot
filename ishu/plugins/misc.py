@@ -106,7 +106,7 @@ async def auto_cleanup():
                 await app.send_message(
                     chat_id=app.logger,
                     text=(
-                        f"⚠️ <b>Disk space low</b>\n\n"
+                        f"<b>Disk space low</b>\n\n"
                         f"Bot: <b>{app.name}</b>\n"
                         f"Free: <code>{psutil_disk_free_percent():.1f}%</code> "
                         f"(threshold {threshold}%)\n"

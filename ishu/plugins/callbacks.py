@@ -153,7 +153,7 @@ async def _autoplay_mode_cb(_, query: types.CallbackQuery):
     curr_mode = await db.get_autoplay_mode(chat_id)
     next_mode = {"vibe": "artist", "artist": "trending", "trending": "vibe"}.get(curr_mode, "vibe")
     await db.set_autoplay_mode(chat_id, next_mode)
-    labels = {"vibe": "🎧 Vibe Radio", "artist": "🎤 Artist Radio", "trending": "🔥 Trending Hits"}
+    labels = {"vibe": " Vibe Radio", "artist": " Artist Radio", "trending": " Trending Hits"}
     await query.answer(f"Autoplay Mode: {labels[next_mode]}", show_alert=True)
     try:
         await query.edit_message_reply_markup(
@@ -181,13 +181,13 @@ async def _youtube_menu_cb(_, query: types.CallbackQuery):
     link = _panel_state[chat_id].get("link")
     
     menu_text = (
-        "<b><emoji id=5321505140199418151>🔴</emoji> YouTube Music Category & Filter Options:</b>\n\n"
+        "<b> YouTube Music Category & Filter Options:</b>\n\n"
         "Select a section to browse & stream Indian music:\n"
-        "• <emoji id=5321505140199418151>🎵</emoji> <b>Songs</b> — High Quality Audio Hits\n"
-        "• <emoji id=5233578612665375810>🎤</emoji> <b>Artists</b> — Popular Indian Artists\n"
-        "• <emoji id=5462956611033117422>💿</emoji> <b>Albums</b> — Official Music Albums\n"
-        "• <emoji id=6007817446398890097>📑</emoji> <b>Playlists</b> — Top Indian Charts & Mixes\n"
-        "• <emoji id=5366477429223209600>🎬</emoji> <b>Music Videos</b> — Official HD Music Videos"
+        "•  <b>Songs</b> — High Quality Audio Hits\n"
+        "•  <b>Artists</b> — Popular Indian Artists\n"
+        "•  <b>Albums</b> — Official Music Albums\n"
+        "•  <b>Playlists</b> — Top Indian Charts & Mixes\n"
+        "•  <b>Music Videos</b> — Official HD Music Videos"
     )
     await query.answer("YouTube Music Category Options")
     try:
@@ -239,7 +239,7 @@ async def _yt_cat_cb(_, query: types.CallbackQuery):
         "videos": "Music Videos",
     }
     
-    await query.answer(f"Autoplay set to {cat_labels.get(cat_type, cat_type)} Mode ♾", show_alert=True)
+    await query.answer(f"Autoplay set to {cat_labels.get(cat_type, cat_type)} Mode ", show_alert=True)
 
 
 @app.on_callback_query(filters.regex(r"^yt_menu_back") & ~app.bl_users)
@@ -275,7 +275,7 @@ async def _yt_menu_back_cb(_, query: types.CallbackQuery):
                 getattr(curr, "user", "User"),
             )
         else:
-            saved_caption = "<b><emoji id=5039827436737397847>✨</emoji> Player Control Panel</b>"
+            saved_caption = "<b> Player Control Panel</b>"
             
     try:
         if query.message.caption:

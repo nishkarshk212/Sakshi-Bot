@@ -102,34 +102,34 @@ def _ents_to_dicts(entities) -> list | None:
 def _panel_markup(cfg: dict) -> types.InlineKeyboardMarkup:
     rows = []
     rows.append([
-        types.InlineKeyboardButton(text="📝 Set Message Text", callback_data=f"{CB_PREFIX}settext"),
-        types.InlineKeyboardButton(text="🖼️ Set Media", callback_data=f"{CB_PREFIX}setmedia"),
+        types.InlineKeyboardButton(text=" Set Message Text", callback_data=f"{CB_PREFIX}settext"),
+        types.InlineKeyboardButton(text=" Set Media", callback_data=f"{CB_PREFIX}setmedia"),
     ])
     rows.append([
-        types.InlineKeyboardButton(text="🔘 Set Inline Buttons", callback_data=f"{CB_PREFIX}setbtns"),
-        types.InlineKeyboardButton(text="⏱️ Set Delay", callback_data=f"{CB_PREFIX}setdelay"),
+        types.InlineKeyboardButton(text=" Set Inline Buttons", callback_data=f"{CB_PREFIX}setbtns"),
+        types.InlineKeyboardButton(text=" Set Delay", callback_data=f"{CB_PREFIX}setdelay"),
     ])
     disabled = bool(cfg.get("disabled"))
-    toggle_text = "✅ Enabled – tap to Disable" if not disabled else "⛔ Disabled – tap to Enable"
+    toggle_text = " Enabled – tap to Disable" if not disabled else " Disabled – tap to Enable"
     rows.append([types.InlineKeyboardButton(text=toggle_text, callback_data=f"{CB_PREFIX}toggle")])
     rows.append([
-        types.InlineKeyboardButton(text="🗑️ Clear Media", callback_data=f"{CB_PREFIX}clmedia"),
-        types.InlineKeyboardButton(text="↩️ Reset Buttons", callback_data=f"{CB_PREFIX}rstbtns"),
+        types.InlineKeyboardButton(text=" Clear Media", callback_data=f"{CB_PREFIX}clmedia"),
+        types.InlineKeyboardButton(text=" Reset Buttons", callback_data=f"{CB_PREFIX}rstbtns"),
     ])
     rows.append([
-        types.InlineKeyboardButton(text="🔄 Full Reset (Defaults)", callback_data=f"{CB_PREFIX}reset"),
-        types.InlineKeyboardButton(text="🔍 View Config", callback_data=f"{CB_PREFIX}view"),
+        types.InlineKeyboardButton(text=" Full Reset (Defaults)", callback_data=f"{CB_PREFIX}reset"),
+        types.InlineKeyboardButton(text=" View Config", callback_data=f"{CB_PREFIX}view"),
     ])
-    rows.append([types.InlineKeyboardButton(text="❌ Close Panel", callback_data=f"{CB_PREFIX}close")])
+    rows.append([types.InlineKeyboardButton(text=" Close Panel", callback_data=f"{CB_PREFIX}close")])
     return types.InlineKeyboardMarkup(rows)
 
 
 def _media_info_text(cfg: dict) -> str:
     m = cfg.get("media") if isinstance(cfg, dict) else None
     if not m or not isinstance(m, dict):
-        return "🖼️ <b>Media:</b> <i>(not set)</i>"
+        return " <b>Media:</b> <i>(not set)</i>"
     mtype = str(m.get("type") or "unknown").upper()
-    lines = [f"🖼️ <b>Media:</b> {mtype}"]
+    lines = [f" <b>Media:</b> {mtype}"]
     for k in ("file_name", "file_size", "width", "height", "duration", "title", "performer"):
         v = m.get(k)
         if v not in (None, ""):
@@ -145,25 +145,25 @@ def _status_text(cfg: dict) -> str:
     updated = cfg.get("updated_at") if isinstance(cfg, dict) else None
 
     lines = []
-    lines.append("⚙️ <b>Assistant PM Auto-Reply Panel</b>")
+    lines.append(" <b>Assistant PM Auto-Reply Panel</b>")
     lines.append("")
-    lines.append(f"🔔 Status: {'<b>ENABLED</b>' if not disabled else '<b>DISABLED</b>'}")
+    lines.append(f" Status: {'<b>ENABLED</b>' if not disabled else '<b>DISABLED</b>'}")
     if delay is not None:
-        lines.append(f"⏱️ Delay: <code>{float(delay):.2f}s</code>  <i>(config override)</i>")
+        lines.append(f" Delay: <code>{float(delay):.2f}s</code>  <i>(config override)</i>")
     else:
-        lines.append("⏱️ Delay: <i>default</i>")
+        lines.append(" Delay: <i>default</i>")
     if updated:
         try:
             ts = datetime.fromtimestamp(float(updated)).strftime("%Y-%m-%d %H:%M UTC")
-            lines.append(f"🕒 Last updated: <code>{ts}</code>")
+            lines.append(f" Last updated: <code>{ts}</code>")
         except Exception:
             pass
     lines.append("")
     if text:
         preview = str(text)[:400] + ("…" if len(str(text)) > 400 else "")
-        lines.append(f"📝 <b>Text (custom)</b> — preview:\n{preview}")
+        lines.append(f" <b>Text (custom)</b> — preview:\n{preview}")
     else:
-        lines.append("📝 <b>Text:</b> <i>(using default premium welcome message)</i>")
+        lines.append(" <b>Text:</b> <i>(using default premium welcome message)</i>")
     lines.append("")
     n_btns = 0
     if buttons:
@@ -181,7 +181,7 @@ def _status_text(cfg: dict) -> str:
                     n_btns += len(r)
         except Exception:
             pass
-    lines.append(f"🔘 <b>Buttons:</b> {n_btns} total (max {MAX_BUTTONS}, rows {MAX_ROWS})")
+    lines.append(f" <b>Buttons:</b> {n_btns} total (max {MAX_BUTTONS}, rows {MAX_ROWS})")
     lines.append("")
     lines.append(_media_info_text(cfg if isinstance(cfg, dict) else {}))
     lines.append("")
@@ -202,7 +202,7 @@ async def assistant_panel_cmd(_, m: types.Message):
 @app.on_callback_query(filters.regex(f"^{CB_PREFIX}"))
 async def assistant_panel_cb(_, cb: types.CallbackQuery):
     if not _owner_only(cb):
-        await cb.answer("⚠️ Owner only.", show_alert=True)
+        await cb.answer(" Owner only.", show_alert=True)
         return
     action = cb.data[len(CB_PREFIX):]
     try:
@@ -218,28 +218,28 @@ async def assistant_panel_cb(_, cb: types.CallbackQuery):
     if action == "toggle":
         disabled = not bool(cfg.get("disabled"))
         await db.set_assistant_pm_disabled(disabled)
-        await cb.answer(f"✅ Autoreply {'ENABLED' if not disabled else 'DISABLED'}.", show_alert=True)
+        await cb.answer(f" Autoreply {'ENABLED' if not disabled else 'DISABLED'}.", show_alert=True)
         cfg = await db.get_assistant_pm_config() or {}
         await cb.message.edit_text(_status_text(cfg), reply_markup=_panel_markup(cfg), disable_web_page_preview=True)
         return
 
     if action == "reset":
         await db.reset_assistant_pm_config()
-        await cb.answer("🔄 Config reset to defaults.", show_alert=True)
+        await cb.answer(" Config reset to defaults.", show_alert=True)
         cfg = await db.get_assistant_pm_config() or {}
         await cb.message.edit_text(_status_text(cfg), reply_markup=_panel_markup(cfg), disable_web_page_preview=True)
         return
 
     if action == "clmedia":
         await db.set_assistant_pm_media(None)
-        await cb.answer("🗑️ Media cleared.", show_alert=True)
+        await cb.answer(" Media cleared.", show_alert=True)
         cfg = await db.get_assistant_pm_config() or {}
         await cb.message.edit_text(_status_text(cfg), reply_markup=_panel_markup(cfg), disable_web_page_preview=True)
         return
 
     if action == "rstbtns":
         await db.set_assistant_pm_buttons([])
-        await cb.answer("↩️ Buttons reset to default.", show_alert=True)
+        await cb.answer(" Buttons reset to default.", show_alert=True)
         cfg = await db.get_assistant_pm_config() or {}
         await cb.message.edit_text(_status_text(cfg), reply_markup=_panel_markup(cfg), disable_web_page_preview=True)
         return
@@ -248,14 +248,14 @@ async def assistant_panel_cb(_, cb: types.CallbackQuery):
         text = cfg.get("text") if isinstance(cfg, dict) else None
         buttons = cfg.get("buttons") if isinstance(cfg, dict) else None
         lines = []
-        lines.append("🔍 <b>Full Assistant PM Config</b>")
+        lines.append(" <b>Full Assistant PM Config</b>")
         lines.append("")
         if text:
-            lines.append(f"📝 <b>Text:</b>\n{text}")
+            lines.append(f" <b>Text:</b>\n{text}")
         else:
-            lines.append("📝 <b>Text:</b> <i>(default)</i>")
+            lines.append(" <b>Text:</b> <i>(default)</i>")
         lines.append("")
-        lines.append(f"🔘 <b>Buttons (max {MAX_BUTTONS}):</b>")
+        lines.append(f" <b>Buttons (max {MAX_BUTTONS}):</b>")
         lines.append(_fmt_buttons_preview(buttons))
         lines.append("")
         lines.append(_media_info_text(cfg if isinstance(cfg, dict) else {}))
@@ -274,7 +274,7 @@ async def assistant_panel_cb(_, cb: types.CallbackQuery):
 
     if action == "settext":
         msg = (
-            "📝 <b>Set Assistant PM Text</b>\n\n"
+            " <b>Set Assistant PM Text</b>\n\n"
             "Please send me the new autoreply message now — or reply to this message with the text.\n\n"
             "<b>Supports:</b>\n"
             "  • Markdown/HTML formatting\n"
@@ -283,14 +283,14 @@ async def assistant_panel_cb(_, cb: types.CallbackQuery):
             "Or use: <code>/setassistantpm &lt;text&gt;</code>"
         )
         await cb.message.edit_text(msg, reply_markup=types.InlineKeyboardMarkup([[
-            types.InlineKeyboardButton("⬅️ Back to Panel", callback_data=f"{CB_PREFIX}back"),
+            types.InlineKeyboardButton("⬅ Back to Panel", callback_data=f"{CB_PREFIX}back"),
         ]]), disable_web_page_preview=True)
         await cb.answer()
         return
 
     if action == "setmedia":
         msg = (
-            "🖼️ <b>Set Assistant PM Media</b>\n\n"
+            " <b>Set Assistant PM Media</b>\n\n"
             "Send or forward <b>any single media</b> now and I'll attach it to the autoreply.\n\n"
             "<b>Supported media types:</b>\n"
             "  • Photo / Image\n"
@@ -303,14 +303,14 @@ async def assistant_panel_cb(_, cb: types.CallbackQuery):
             "Remove media with: <code>/clearassistantmedia</code>"
         )
         await cb.message.edit_text(msg, reply_markup=types.InlineKeyboardMarkup([[
-            types.InlineKeyboardButton("⬅️ Back to Panel", callback_data=f"{CB_PREFIX}back"),
+            types.InlineKeyboardButton("⬅ Back to Panel", callback_data=f"{CB_PREFIX}back"),
         ]]), disable_web_page_preview=True)
         await cb.answer()
         return
 
     if action == "setbtns":
         msg = (
-            "🔘 <b>Set Inline Buttons</b>\n\n"
+            " <b>Set Inline Buttons</b>\n\n"
             "Send a message with up to <b>12 rows</b>, one per line.\n\n"
             "<b>Format:</b>\n"
             "  One button per line:\n"
@@ -322,20 +322,20 @@ async def assistant_panel_cb(_, cb: types.CallbackQuery):
             "Or use the command: <code>/setassistantbtn</code> with the same format."
         )
         await cb.message.edit_text(msg, reply_markup=types.InlineKeyboardMarkup([[
-            types.InlineKeyboardButton("⬅️ Back to Panel", callback_data=f"{CB_PREFIX}back"),
+            types.InlineKeyboardButton("⬅ Back to Panel", callback_data=f"{CB_PREFIX}back"),
         ]]), disable_web_page_preview=True)
         await cb.answer()
         return
 
     if action == "setdelay":
         msg = (
-            "⏱️ <b>Set Typing Delay</b>\n\n"
+            " <b>Set Typing Delay</b>\n\n"
             "Send a number (seconds) e.g. <code>1.2</code> or <code>0</code> (no delay).\n\n"
             "Default (environment) is used when not set here.\n\n"
             "Or use: <code>/setassistantdelay 1.5</code>"
         )
         await cb.message.edit_text(msg, reply_markup=types.InlineKeyboardMarkup([[
-            types.InlineKeyboardButton("⬅️ Back to Panel", callback_data=f"{CB_PREFIX}back"),
+            types.InlineKeyboardButton("⬅ Back to Panel", callback_data=f"{CB_PREFIX}back"),
         ]]), disable_web_page_preview=True)
         await cb.answer()
         return
@@ -403,7 +403,7 @@ async def set_assistant_pm(_, m: types.Message):
     text, ents = _extract_text_and_entities(m)
     if not text:
         return await m.reply_text(
-            "❌ Usage:\n"
+            " Usage:\n"
             "  <code>/setassistantpm &lt;message-text&gt;</code>\n"
             "  or <b>reply</b> with <code>/setassistantpm</code> to a message (preserves premium emoji entities).\n\n"
             "Supported variables:\n"
@@ -416,7 +416,7 @@ async def set_assistant_pm(_, m: types.Message):
         )
     await db.set_assistant_pm_text(text, ents)
     preview = text[:800] + ("…" if len(text) > 800 else "")
-    out = [f"✅ Assistant PM text saved (entities: {len(ents) if ents else 0})."]
+    out = [f" Assistant PM text saved (entities: {len(ents) if ents else 0})."]
     out.append("")
     out.append(f"<b>Preview:</b>\n{preview}")
     out.append("")
@@ -478,7 +478,7 @@ async def set_assistant_media(_, m: types.Message):
 
     if not media_dict:
         return await m.reply_text(
-            "❌ Usage:\n"
+            " Usage:\n"
             "  <b>Reply</b> with <code>/setassistantmedia</code> to any:\n"
             "    • Photo / Image\n"
             "    • Video / Animation / GIF\n"
@@ -488,7 +488,7 @@ async def set_assistant_media(_, m: types.Message):
             "  Or attach the media <b>directly</b> with the command as caption."
         )
     await db.set_assistant_pm_media(media_dict)
-    lines = [f"✅ Assistant PM media saved: <b>{media_dict['type'].upper()}</b>"]
+    lines = [f" Assistant PM media saved: <b>{media_dict['type'].upper()}</b>"]
     for k in ("file_name", "file_size", "width", "height", "duration", "mime_type", "emoji", "set_name"):
         if media_dict.get(k) not in (None, ""):
             lines.append(f"  • {k}: <code>{media_dict[k]}</code>")
@@ -501,7 +501,7 @@ async def set_assistant_media(_, m: types.Message):
 @app.on_message(filters.command(["clearassistantmedia"]) & owner_filter)
 async def clear_assistant_media(_, m: types.Message):
     await db.set_assistant_pm_media(None)
-    await m.reply_text("🗑️ Assistant PM media cleared. Autoreply will use plain text mode.")
+    await m.reply_text(" Assistant PM media cleared. Autoreply will use plain text mode.")
 
 
 @app.on_message(filters.command(["setassistantbtn", "setassistantbuttons"]) & owner_filter)
@@ -518,7 +518,7 @@ async def set_assistant_btn(_, m: types.Message):
             raw = parts[1]
     if not raw:
         return await m.reply_text(
-            "❌ Usage:\n"
+            " Usage:\n"
             "  <code>/setassistantbtn</code> followed by up to <b>12 rows</b> of:\n"
             "    One button per line:  <code>Label Text|https://example.com</code>\n"
             "    Multiple per row:     <code>A|urlA || B|urlB || C|urlC</code>\n\n"
@@ -531,7 +531,7 @@ async def set_assistant_btn(_, m: types.Message):
     parsed = _parse_buttons_from_text(raw)
     await db.set_assistant_pm_buttons(parsed)
     await m.reply_text(
-        f"✅ Assistant PM buttons saved.\n\n"
+        f" Assistant PM buttons saved.\n\n"
         f"<b>Configured rows:</b>\n{_fmt_buttons_preview(parsed)}\n\n"
         "Use <code>/getassistantpm</code> to view full config or <code>/assistantpanel</code> for the GUI.",
         disable_web_page_preview=True,
@@ -543,7 +543,7 @@ async def set_assistant_delay(_, m: types.Message):
     parts = m.text.split(None, 1)
     if len(parts) < 2:
         return await m.reply_text(
-            "❌ Usage:\n"
+            " Usage:\n"
             "  <code>/setassistantdelay &lt;seconds&gt;</code>\n\n"
             "Examples:\n"
             "  <code>/setassistantdelay 1.5</code>  — 1.5 seconds typing delay\n"
@@ -553,23 +553,23 @@ async def set_assistant_delay(_, m: types.Message):
     val = parts[1].strip()
     if val.lower() in ("default", "none", "null", "unset", "reset"):
         await db.set_assistant_pm_delay(None)
-        return await m.reply_text("⏱️ Assistant PM delay reset to <b>default</b> (from env or 1.2s).")
+        return await m.reply_text(" Assistant PM delay reset to <b>default</b> (from env or 1.2s).")
     try:
         delay = float(val)
     except (TypeError, ValueError):
-        return await m.reply_text("❌ Invalid number. Use e.g. <code>1.2</code> or <code>0</code> or <code>default</code>.")
+        return await m.reply_text(" Invalid number. Use e.g. <code>1.2</code> or <code>0</code> or <code>default</code>.")
     if delay < 0:
         delay = 0.0
     if delay > 10:
         delay = 10.0
     await db.set_assistant_pm_delay(delay)
-    await m.reply_text(f"⏱️ Assistant PM delay set to <b>{delay:.2f}s</b>.")
+    await m.reply_text(f" Assistant PM delay set to <b>{delay:.2f}s</b>.")
 
 
 @app.on_message(filters.command(["resetassistantpm"]) & owner_filter)
 async def reset_assistant_pm(_, m: types.Message):
     await db.reset_assistant_pm_config()
-    await m.reply_text("🔄 Assistant PM config fully reset to <b>defaults</b> (text, buttons, media, delay cleared).")
+    await m.reply_text(" Assistant PM config fully reset to <b>defaults</b> (text, buttons, media, delay cleared).")
 
 
 @app.on_message(filters.command(["toggleassistantpm"]) & owner_filter)
@@ -577,8 +577,8 @@ async def toggle_assistant_pm(_, m: types.Message):
     cfg = await db.get_assistant_pm_config() or {}
     new_state = not bool(cfg.get("disabled"))
     await db.set_assistant_pm_disabled(not new_state)
-    status = "ENABLED ✅" if new_state else "DISABLED ⛔"
-    await m.reply_text(f"🔔 Assistant PM autoreply is now <b>{status}</b>.")
+    status = "ENABLED " if new_state else "DISABLED "
+    await m.reply_text(f" Assistant PM autoreply is now <b>{status}</b>.")
 
 
 @app.on_message(filters.command(["getassistantpm"]) & owner_filter)
@@ -592,11 +592,11 @@ async def get_assistant_pm(_, m: types.Message):
 
     lines = []
     lines.append("<b>Assistant PM Config</b>")
-    lines.append(f"🔔 Status: <b>{'ENABLED' if not disabled else 'DISABLED'}</b>")
+    lines.append(f" Status: <b>{'ENABLED' if not disabled else 'DISABLED'}</b>")
     if delay is not None:
-        lines.append(f"⏱️ Delay: <code>{float(delay):.2f}s</code> (set via DB)")
+        lines.append(f" Delay: <code>{float(delay):.2f}s</code> (set via DB)")
     else:
-        lines.append("⏱️ Delay: default (env fallback)")
+        lines.append(" Delay: default (env fallback)")
     if updated:
         try:
             ts = datetime.fromtimestamp(float(updated)).strftime("%Y-%m-%d %H:%M UTC")
@@ -612,7 +612,7 @@ async def get_assistant_pm(_, m: types.Message):
         if ents:
             ce = sum(1 for e in ents if isinstance(e, dict) and e.get("custom_emoji_id"))
             if ce:
-                lines.append(f"✨ Premium custom emoji entities: <b>{ce}</b>")
+                lines.append(f" Premium custom emoji entities: <b>{ce}</b>")
     else:
         lines.append("<b>Text:</b> <i>(using default premium welcome message)</i>")
 

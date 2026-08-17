@@ -395,11 +395,11 @@ class TgCall(PyTgCalls):
             try:
                 if "ChannelInvalid" in str(err) or "CHANNEL_INVALID" in str(err):
                     await message.edit_text(
-                        "❌ <b>Playback Error:</b> <code>CHANNEL_INVALID</code>\n\n"
+                        "<b>Playback Error:</b> <code>CHANNEL_INVALID</code>\n\n"
                         "<i>Please make sure the Assistant account (userbot) is present in this group and promoted to admin!</i>"
                     )
                 else:
-                    await message.edit_text(f"❌ <b>Playback Error:</b> <code>{err}</code>")
+                    await message.edit_text(f"<b>Playback Error:</b> <code>{err}</code>")
             except Exception:
                 pass
             await self.play_next(chat_id)

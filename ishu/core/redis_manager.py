@@ -26,7 +26,7 @@ class RedisManager:
             self.client = redis.from_url(redis_url, **kwargs)
             await self.client.ping()
             self.enabled = True
-            logger.info("Connected to Heroku Redis RAM Cache successfully! 🚀")
+            logger.info("Connected to Heroku Redis RAM Cache successfully! ")
         except Exception as e:
             logger.warning("Redis connection failed: %s. Falling back to MongoDB/CDN.", e)
             self.enabled = False

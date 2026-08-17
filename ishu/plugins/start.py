@@ -93,15 +93,15 @@ async def start(client, message: types.Message):
             uptime_str = f"{hours}ʜ:{minutes}ϻ:{seconds}ꜱ"
 
         caption_text = (
-            "<blockquote><b><emoji id=6125150373763094821>⭐</emoji> ᴀ ᴄ ᴛ ɪ ᴠ ᴇ  ᴀ ɴ ᴅ  ᴀ ʟ ɪ ᴠ ᴇ\n"
+            "<blockquote><b> ᴀ ᴄ ᴛ ɪ ᴠ ᴇ  ᴀ ɴ ᴅ  ᴀ ʟ ɪ ᴠ ᴇ\n"
             "──────────────────\n"
-            "<emoji id=6124898345082165755>⚡</emoji> ꜱʏꜱᴛᴇᴍ ɪꜱ ʀᴜɴɴɪɴɢ ꜱᴍᴏᴏᴛʜʟʏ .\n"
-            f"<emoji id=6125150373763094821>⭐</emoji> ᴄᴏʀᴇ : {bot_nm} ᴇɴɢɪɴᴇ ᴠ2.0\n"
+            " ꜱʏꜱᴛᴇᴍ ɪꜱ ʀᴜɴɴɪɴɢ ꜱᴍᴏᴏᴛʜʟʏ .\n"
+            f" ᴄᴏʀᴇ : {bot_nm} ᴇɴɢɪɴᴇ ᴠ2.0\n"
             "──────────────────\n"
-            "<emoji id=6124898345082165755>⚡</emoji> ᴜᴘᴛɪᴍᴇ : " + uptime_str + "</b></blockquote>"
+            " ᴜᴘᴛɪᴍᴇ : " + uptime_str + "</b></blockquote>"
         )
         try:
-            await message.react(random.choice(["🔥", "❤️", "⚡", "✨", "🎉"]))
+            await message.react(random.choice(["", "", "", "", ""]))
         except Exception:
             pass
         sent_msg = await message.reply_photo(
@@ -113,7 +113,7 @@ async def start(client, message: types.Message):
             has_spoiler=True,
         )
         try:
-            await sent_msg.react(random.choice(["🔥", "❤️", "⚡", "✨", "🎉", "🥰", "😍"]))
+            await sent_msg.react(random.choice(["", "", "", "", "", "", ""]))
         except Exception:
             pass
 
@@ -154,22 +154,22 @@ async def _new_member(_, message: types.Message):
                 await db.add_chat(message.chat.id, message.chat.title)
         elif not member.is_bot:
             welcome_pm_text = (
-                f"👋 <b>Welcome {member.mention}!</b>\n\n"
-                f"Thank you for joining <b>{message.chat.title}</b>! 🎵\n\n"
+                f" <b>Welcome {member.mention}!</b>\n\n"
+                f"Thank you for joining <b>{message.chat.title}</b>! \n\n"
                 f"I am <b>{app.name}</b>, your ultimate high-quality Music & Video Bot!\n"
                 f"You can stream music, HD videos, playlists, and radio directly in voice chats.\n\n"
-                f"🎧 <b>Quick Commands:</b>\n"
+                f" <b>Quick Commands:</b>\n"
                 f"• <code>/play [song name]</code> — Play audio song\n"
                 f"• <code>/vplay [video name]</code> — Play video song\n"
                 f"• <code>/settings</code> — Group settings\n\n"
-                f"Enjoy listening to music! 🎶"
+                f"Enjoy listening to music! "
             )
             try:
                 pm_kb = types.InlineKeyboardMarkup(
                     [
                         [
                             types.InlineKeyboardButton(
-                                text="➕ Add Me To Your Group",
+                                text=" Add Me To Your Group",
                                 url=f"https://t.me/{app.username}?startgroup=true",
                             ),
                         ]

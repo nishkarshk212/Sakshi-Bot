@@ -7,16 +7,16 @@ from pyrogram import enums, filters, types
 from ishu import app, config, db, logger
 
 # ── Premium Emoji IDs ──────────────────────────────────────────────────────────
-ACCEPT_EMOJI_ID = 6296367896398399651   # displays ✅
-DECLINE_EMOJI_ID = 6298671811345254603  # displays 😭
+ACCEPT_EMOJI_ID = 6296367896398399651   # displays 
+DECLINE_EMOJI_ID = 6298671811345254603  # displays 
 
 
 def _accept_emoji() -> str:
-    return f'<emoji id="{ACCEPT_EMOJI_ID}">✅</emoji>'
+    return f''
 
 
 def _decline_emoji() -> str:
-    return f'<emoji id="{DECLINE_EMOJI_ID}">😭</emoji>'
+    return f''
 
 
 # ── /joinreq command — admin toggle ────────────────────────────────────────────
@@ -83,7 +83,7 @@ async def on_join_request(client, request: types.ChatJoinRequest):
 
     # 1. Send PM to the requesting user (best-effort)
     pm_text = (
-        f"👋 Hello <b>{user.first_name}</b>!\n\n"
+        f" Hello <b>{user.first_name}</b>!\n\n"
         f"Your request to join <b>{chat.title}</b> has been received.\n"
         f"An admin will review and process your request shortly."
     )
@@ -95,9 +95,9 @@ async def on_join_request(client, request: types.ChatJoinRequest):
 
     # 2. Post notification in group with premium emoji Accept / Decline buttons
     group_text = (
-        f"📥 <b>New Join Request</b>\n\n"
-        f"👤 <b>User:</b> {user.mention} (<code>{user.id}</code>)\n"
-        f"💬 <b>Group:</b> <b>{chat.title}</b>\n\n"
+        f" <b>New Join Request</b>\n\n"
+        f" <b>User:</b> {user.mention} (<code>{user.id}</code>)\n"
+        f" <b>Group:</b> <b>{chat.title}</b>\n\n"
         f"Admins, please review and approve or decline below:"
     )
 
@@ -150,7 +150,7 @@ async def handle_join_request_callback(client, callback: types.CallbackQuery):
         admins = await db.get_admins(chat_id)
         if admin.id not in admins:
             return await callback.answer(
-                "⚠️ Only group admins can approve or decline join requests!",
+                " Only group admins can approve or decline join requests!",
                 show_alert=True,
             )
 
@@ -169,19 +169,19 @@ async def handle_join_request_callback(client, callback: types.CallbackQuery):
     if action == "accept":
         try:
             await client.approve_chat_join_request(chat_id, target_user_id)
-            await callback.answer("✅ Request Approved!")
+            await callback.answer(" Request Approved!")
 
             accepted_msg = (
                 f"{_accept_emoji()} <b>Join Request Approved</b>\n\n"
-                f"👤 <b>User:</b> {target_user_mention}\n"
-                f"💬 <b>Group:</b> <b>{chat_title}</b>\n"
-                f"👮‍♂️ <b>Approved By:</b> {admin.mention}"
+                f" <b>User:</b> {target_user_mention}\n"
+                f" <b>Group:</b> <b>{chat_title}</b>\n"
+                f"‍ <b>Approved By:</b> {admin.mention}"
             )
             await callback.message.edit_text(accepted_msg, parse_mode=enums.ParseMode.HTML)
 
             pm_confirm = (
                 f"{_accept_emoji()} <b>Join Request Approved!</b>\n\n"
-                f"🎉 Congratulations <b>{target_user_name}</b>!\n"
+                f" Congratulations <b>{target_user_name}</b>!\n"
                 f"Your request to join <b>{chat_title}</b> has been approved "
                 f"by {admin.mention}.\n\nYou can now join and participate!"
             )
@@ -200,12 +200,12 @@ async def handle_join_request_callback(client, callback: types.CallbackQuery):
                 "Join request for %s in %s: user already a participant (auto-resolved).",
                 target_user_id, chat_id,
             )
-            await callback.answer("✅ User is already in the group!")
+            await callback.answer(" User is already in the group!")
             already_msg = (
                 f"{_accept_emoji()} <b>Already a Member</b>\n\n"
-                f"👤 <b>User:</b> {target_user_mention}\n"
-                f"💬 <b>Group:</b> <b>{chat_title}</b>\n"
-                f"ℹ️ User had already joined the group."
+                f" <b>User:</b> {target_user_mention}\n"
+                f" <b>Group:</b> <b>{chat_title}</b>\n"
+                f" User had already joined the group."
             )
             try:
                 await callback.message.edit_text(already_msg, parse_mode=enums.ParseMode.HTML)
@@ -214,19 +214,19 @@ async def handle_join_request_callback(client, callback: types.CallbackQuery):
 
         except Exception as e:
             logger.error("Failed to approve join request for %s in %s: %s", target_user_id, chat_id, e)
-            await callback.answer(f"❌ Error: {e}", show_alert=True)
+            await callback.answer(f" Error: {e}", show_alert=True)
 
     # ── DECLINE ────────────────────────────────────────────────────────────────
     elif action == "decline":
         try:
             await client.decline_chat_join_request(chat_id, target_user_id)
-            await callback.answer("❌ Request Declined!")
+            await callback.answer(" Request Declined!")
 
             declined_msg = (
                 f"{_decline_emoji()} <b>Join Request Declined</b>\n\n"
-                f"👤 <b>User:</b> {target_user_mention}\n"
-                f"💬 <b>Group:</b> <b>{chat_title}</b>\n"
-                f"👮‍♂️ <b>Declined By:</b> {admin.mention}"
+                f" <b>User:</b> {target_user_mention}\n"
+                f" <b>Group:</b> <b>{chat_title}</b>\n"
+                f"‍ <b>Declined By:</b> {admin.mention}"
             )
             await callback.message.edit_text(declined_msg, parse_mode=enums.ParseMode.HTML)
 
@@ -242,7 +242,7 @@ async def handle_join_request_callback(client, callback: types.CallbackQuery):
 
         except Exception as e:
             logger.error("Failed to decline join request for %s in %s: %s", target_user_id, chat_id, e)
-            await callback.answer(f"❌ Error: {e}", show_alert=True)
+            await callback.answer(f" Error: {e}", show_alert=True)
 
 
 # ── Personal welcome PM when a user actually joins ─────────────────────────────
@@ -277,9 +277,9 @@ async def on_user_joined_group(client, update: types.ChatMemberUpdated):
     welcome_text = (
         f"{_accept_emoji()} <b>Welcome to {chat.title}!</b>\n\n"
         f"Hey <b>{user_obj.first_name}</b>, glad to have you here!\n\n"
-        f"🎵 Use the music commands to enjoy songs together.\n"
+        f" Use the music commands to enjoy songs together.\n"
         f"Type /play &lt;song name&gt; to start playing music!\n\n"
-        f"Enjoy your stay! 🚀"
+        f"Enjoy your stay! "
     )
     try:
         await client.send_message(

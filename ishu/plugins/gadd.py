@@ -14,21 +14,21 @@ from ishu import app, config, db
 async def add_allbot(_, message: types.Message):
     if len(message.command) < 2:
         return await message.reply(
-            "❍ ɪɴᴠᴀʟɪᴅ ᴄᴏᴍᴍᴀɴᴅ ғᴏʀᴍᴀᴛ. ᴘʟᴇᴀsᴇ ᴜsᴇ ʟɪᴋᴇ » <code>/gadd Bot_username</code>"
+            " ɪɴᴠᴀʟɪᴅ ᴄᴏᴍᴍᴀɴᴅ ғᴏʀᴍᴀᴛ. ᴘʟᴇᴀsᴇ ᴜsᴇ ʟɪᴋᴇ » <code>/gadd Bot_username</code>"
         )
 
     bot_username = message.command[1]
     try:
         bot = await app.get_users(bot_username)
     except Exception:
-        return await message.reply(f"❍ ᴄᴏᴜʟᴅ ɴᴏᴛ ғɪɴᴅ ᴜsᴇʀ: {bot_username}")
+        return await message.reply(f" ᴄᴏᴜʟᴅ ɴᴏᴛ ғɪɴᴅ ᴜsᴇʀ: {bot_username}")
 
     # The userbot (assistant) that manages this chat — only assistants can
     # add members, so route through db.get_client, which returns the Client.
     userbot_client = await db.get_client(message.chat.id)
     ub_name = getattr(userbot_client, "username", None) or "userbot"
 
-    status = await message.reply("❍ ᴀᴅᴅɪɴɢ ɢɪᴠᴇɴ ʙᴏᴛ ɪɴ ᴀʟʟ ᴄʜᴀᴛs!")
+    status = await message.reply(" ᴀᴅᴅɪɴɢ ɢɪᴠᴇɴ ʙᴏᴛ ɪɴ ᴀʟʟ ᴄʜᴀᴛs!")
     done = 0
     failed = 0
     added_groups = []
@@ -51,20 +51,20 @@ async def add_allbot(_, message: types.Message):
         if (done + failed) % 5 == 0:
             try:
                 await status.edit(
-                    f"❍ ᴀᴅᴅɪɴɢ {bot_username}\n\n"
-                    f"➥ ᴀᴅᴅᴇᴅ ɪɴ {done} ᴄʜᴀᴛs ✔\n"
-                    f"➥ ғᴀɪʟᴇᴅ ɪɴ {failed} ᴄʜᴀᴛs ✘\n\n"
-                    f"➲ ᴀᴅᴅᴇᴅ ʙʏ » @{ub_name}"
+                    f" ᴀᴅᴅɪɴɢ {bot_username}\n\n"
+                    f" ᴀᴅᴅᴇᴅ ɪɴ {done} ᴄʜᴀᴛs \n"
+                    f" ғᴀɪʟᴇᴅ ɪɴ {failed} ᴄʜᴀᴛs \n\n"
+                    f" ᴀᴅᴅᴇᴅ ʙʏ » @{ub_name}"
                 )
             except Exception:
                 pass
         await asyncio.sleep(3)
 
     await status.edit(
-        f"❍ {bot_username} ʙᴏᴛ ᴀᴅᴅᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ 🎉\n\n"
-        f"➥ ᴀᴅᴅᴇᴅ ɪɴ {done} ᴄʜᴀᴛs ✅\n"
-        f"➥ ғᴀɪʟᴇᴅ ɪɴ {failed} ᴄʜᴀᴛs ✘\n\n"
-        f"➲ ᴀᴅᴅᴇᴅ ʙʏ » @{ub_name}"
+        f" {bot_username} ʙᴏᴛ ᴀᴅᴅᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ \n\n"
+        f" ᴀᴅᴅᴇᴅ ɪɴ {done} ᴄʜᴀᴛs \n"
+        f" ғᴀɪʟᴇᴅ ɪɴ {failed} ᴄʜᴀᴛs \n\n"
+        f" ᴀᴅᴅᴇᴅ ʙʏ » @{ub_name}"
     )
 
     if added_groups:
@@ -73,7 +73,7 @@ async def add_allbot(_, message: types.Message):
         for i in range(0, len(added_groups), chunk_size):
             chunk = added_groups[i : i + chunk_size]
             header = (
-                f"❍ <b>ɢʀᴏᴜᴘs ᴡʜᴇʀᴇ {bot_username} ᴡᴀs ᴀᴅᴅᴇᴅ</b>"
+                f" <b>ɢʀᴏᴜᴘs ᴡʜᴇʀᴇ {bot_username} ᴡᴀs ᴀᴅᴅᴇᴅ</b>"
                 f" ({i + 1}–{i + len(chunk)}/{len(added_groups)}):\n\n"
             )
             await message.reply(header + "\n".join(chunk))

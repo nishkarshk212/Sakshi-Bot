@@ -17,18 +17,18 @@ _pm_last_reply = {}
 def _default_pm_text(mention: str, bot_link: str, bot_name: str,
                      channel_link: str, support_link: str | None) -> str:
     text = (
-        f"👋 Hello, {mention}!\n\n"
-        f"🔰 Welcome to {bot_name} Assistant 🔰\n\n"
+        f" Hello, {mention}!\n\n"
+        f" Welcome to {bot_name} Assistant \n\n"
         f"I'm an assistant account that helps stream HD music in voice chats.\n"
         f"To play music, use our official music bot below — just send /start and add it to your group!\n\n"
-        f"🎵 MUSIC BOT: {bot_link}\n"
-        f"📢 UPDATES CHANNEL: {channel_link}\n"
+        f" MUSIC BOT: {bot_link}\n"
+        f" UPDATES CHANNEL: {channel_link}\n"
     )
     if support_link:
-        text += f"💬 SUPPORT GROUP: {support_link}\n"
+        text += f" SUPPORT GROUP: {support_link}\n"
     text += (
-        f"\n👉 Tap the Music Bot link above, press START, then add it to your group's voice chat to enjoy unlimited songs!\n\n"
-        f"🎧 Powered by HD Music Streaming Engine ✨"
+        f"\n Tap the Music Bot link above, press START, then add it to your group's voice chat to enjoy unlimited songs!\n\n"
+        f" Powered by HD Music Streaming Engine "
     )
     return text
 
@@ -36,12 +36,12 @@ def _default_pm_text(mention: str, bot_link: str, bot_name: str,
 def _default_pm_buttons(bot_link: str, channel_link: str, support_link: str | None) -> types.InlineKeyboardMarkup | None:
     rows = []
     rows.append([
-        types.InlineKeyboardButton(text="💎 MUSIC BOT", url=bot_link),
-        types.InlineKeyboardButton(text="🎵 ADD ME", url=f"{bot_link}?startgroup=new"),
+        types.InlineKeyboardButton(text=" MUSIC BOT", url=bot_link),
+        types.InlineKeyboardButton(text=" ADD ME", url=f"{bot_link}?startgroup=new"),
     ])
-    rows.append([types.InlineKeyboardButton(text="📢 UPDATES", url=channel_link)])
+    rows.append([types.InlineKeyboardButton(text=" UPDATES", url=channel_link)])
     if support_link:
-        rows.append([types.InlineKeyboardButton(text="💬 SUPPORT", url=support_link)])
+        rows.append([types.InlineKeyboardButton(text=" SUPPORT", url=support_link)])
     if not rows:
         return None
     return types.InlineKeyboardMarkup(rows)
