@@ -18,10 +18,16 @@ async def _broadcast(client, message: types.Message):
         return await message.reply_text(message.lang["gcast_active"])
 
     msg = message.reply_to_message
-    copy = "-copy" in message.command
-    nochat = "-nochat" in message.command
-    onlyuser = "-user" in message.command
-    onlygroup = "-group" in message.command
+    
+    # Normalize unicode dashes (iOS / Mac smart punctuation) and lowercase
+    raw_text = (message.text or message.caption or "").lower()
+    raw_text = raw_text.replace("—", "-").replace("–", "-")
+    tokens = [t.strip("-") for t in raw_text.split()]
+    
+    copy = "-copy" in raw_text or "copy" in tokens
+    onlyuser = any(t in tokens for t in ["user", "users", "pm", "pms"]) or "-user" in raw_text or "-pm" in raw_text
+    onlygroup = any(t in tokens for t in ["group", "groups", "chat", "chats"]) or "-group" in raw_text or "-chat" in raw_text
+    nochat = "-nochat" in raw_text or "nochat" in tokens or "-nogroup" in raw_text
 
     sent = await message.reply_text(message.lang["gcast_start"])
     count, ucount = 0, 0
