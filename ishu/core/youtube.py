@@ -395,25 +395,14 @@ async def _download_with_fallback(
     """
     video_id = _extract_video_id(link) or link
 
-    # Railway YT API is the primary, reliable path. yt-dlp almost always fails
-    # on Heroku IPs ("Sign in to confirm you're not a bot"), so retry Railway
-    # up to 5 times with exponential backoff (2s, 4s, 8s, 16s) before giving up.
-    max_railway_attempts = 5
-    for attempt in range(1, max_railway_attempts + 1):
-        result = await _railway_download(video_id, media_type)
-        if result:
-            return result, "railway"
-        if attempt < max_railway_attempts:
-            wait = min(2 ** attempt, 30)
-            logger.info(
-                "Railway YT API attempt %s/%s failed for %s. Retrying in %ss...",
-                attempt, max_railway_attempts, video_id, wait,
-            )
-            await asyncio.sleep(wait)
+    # Step 1: Single Railway API download (server-side download, no stream proxy)
+    result = await _railway_download(video_id, media_type)
+    if result:
+        return result, "railway"
 
     logger.warning(
-        "Railway YT API failed after %s attempts for %s. Trying yt-dlp fallback.",
-        max_railway_attempts, video_id,
+        "Railway YT API download failed for %s. Trying yt-dlp fallback.",
+        video_id,
     )
     result = await _direct_ytdlp_download(video_id, media_type)
     if result:
