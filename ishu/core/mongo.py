@@ -162,16 +162,15 @@ class MongoDB:
         return anon.clients[self.assistant[chat_id] - 1]
 
     async def get_client(self, chat_id: int):
-        from ishu import userbot
         if chat_id not in self.assistant:
             await self.get_assistant(chat_id)
 
-        num = self.assistant.get(chat_id, 1)
+        num = self.assistant[chat_id]
         if num > len(userbot.clients):
             num = await self.set_assistant(chat_id)
             self.assistant[chat_id] = num
 
-        return {1: userbot.one, 2: userbot.two, 3: userbot.three}.get(num, userbot.one)
+        return {1: userbot.one, 2: userbot.two, 3: userbot.three}.get(num)
 
 
     # ULTRA-FAST HYBRID MUSIC CACHE METHODS
@@ -257,11 +256,6 @@ class MongoDB:
                 asyncio.create_task(self.save_shared_song(video_id, message_id, is_video, title))
         except Exception as e:
             logger.error("save_music_cache failed for %s: %s", video_id, e)
-
-    async def record_play(self, is_video: bool = False, chat_id: int = 0, user_id: int = 0, video_id: str = "", title: str = "") -> None:
-        """Record play event in MongoDB music stats."""
-        if video_id:
-            await self.update_music_stats(video_id, is_video)
 
     async def update_music_stats(self, video_id: str, is_video: bool = False) -> None:
         """Atomically increment play_count and update last_played timestamp."""
@@ -409,53 +403,29 @@ class MongoDB:
 
     # CHAT METHODS
     async def is_chat(self, chat_id: int) -> bool:
-        if chat_id in self.chats:
-            return True
-        doc = await self.chatsdb.find_one({"_id": chat_id})
-        if doc:
-            if chat_id not in self.chats:
-                self.chats.append(chat_id)
-            return True
-        return False
+        return chat_id in self.chats
 
-    async def add_chat(self, chat_id: int, chat_title: str = None, bot_id: int = None) -> None:
+    async def add_chat(self, chat_id: int, chat_title: str = None) -> None:
         if chat_id not in self.chats:
             self.chats.append(chat_id)
-        update_op = {}
+        update_data = {"_id": chat_id}
         if chat_title:
-            update_op["$set"] = {"title": chat_title}
-        if bot_id:
-            update_op["$addToSet"] = {"bot_ids": bot_id}
-        if update_op:
-            await self.chatsdb.update_one(
-                {"_id": chat_id},
-                update_op,
-                upsert=True,
-            )
-        else:
-            await self.chatsdb.update_one(
-                {"_id": chat_id},
-                {"$setOnInsert": {"_id": chat_id}},
-                upsert=True,
-            )
+            update_data["title"] = chat_title
+        await self.chatsdb.update_one(
+            {"_id": chat_id},
+            {"$set": update_data},
+            upsert=True,
+        )
 
     async def rm_chat(self, chat_id: int) -> None:
-        if await self.is_chat(chat_id):
-            if chat_id in self.chats:
-                self.chats.remove(chat_id)
-            await self.chatsdb.delete_one({"_id": chat_id})
+        if chat_id in self.chats:
+            self.chats.remove(chat_id)
+        await self.chatsdb.delete_one({"_id": chat_id})
 
     async def get_chats(self) -> list:
         chats = [chat["_id"] async for chat in self.chatsdb.find()]
         self.chats = list(set(chats))
         return self.chats
-
-    async def get_bot_chats(self, bot_id: int) -> list[int]:
-        try:
-            chats = await self.chatsdb.find({"bot_ids": bot_id}).to_list(length=50000)
-            return [c["_id"] for c in chats]
-        except Exception:
-            return []
 
     # COMMAND DELETE
     async def get_cmd_delete(self, chat_id: int) -> bool:
@@ -638,38 +608,24 @@ class MongoDB:
     async def is_user(self, user_id: int) -> bool:
         return user_id in self.users
 
-    async def add_user(self, user_id: int, bot_id: int = None) -> None:
-        if not await self.is_user(user_id):
+    async def add_user(self, user_id: int) -> None:
+        if user_id not in self.users:
             self.users.append(user_id)
-        if bot_id:
-            await self.usersdb.update_one(
-                {"_id": user_id},
-                {"$addToSet": {"bot_ids": bot_id}},
-                upsert=True,
-            )
-        else:
-            await self.usersdb.update_one(
-                {"_id": user_id},
-                {"$set": {"_id": user_id}},
-                upsert=True,
-            )
+        await self.usersdb.update_one(
+            {"_id": user_id},
+            {"$set": {"_id": user_id}},
+            upsert=True,
+        )
 
     async def rm_user(self, user_id: int) -> None:
-        if await self.is_user(user_id):
+        if user_id in self.users:
             self.users.remove(user_id)
-            await self.usersdb.delete_one({"_id": user_id})
+        await self.usersdb.delete_one({"_id": user_id})
 
     async def get_users(self) -> list:
         users = [user["_id"] async for user in self.usersdb.find()]
         self.users = list(set(users))
         return self.users
-
-    async def get_bot_users(self, bot_id: int) -> list[int]:
-        try:
-            users = await self.usersdb.find({"bot_ids": bot_id}).to_list(length=100000)
-            return [u["_id"] for u in users]
-        except Exception:
-            return []
 
 
     async def migrate_coll(self) -> None:
@@ -836,6 +792,14 @@ class MongoDB:
             await self.storage_db.assistant_pm_config.delete_one({"_id": "default"})
         except Exception as e:
             logger.warning("reset_assistant_pm_config failed: %s", e)
+
+
+    async def record_play(self, chat_id: int, video_id: str, title: str = "", user_id: int = 0, is_video: bool = False) -> None:
+        """Record play event / alias for update_music_stats."""
+        try:
+            await self.update_music_stats(video_id, is_video=is_video)
+        except Exception as e:
+            logger.warning("record_play failed for %s: %s", video_id, e)
 
     async def load_cache(self) -> None:
         doc = await self.cache.find_one({"_id": "migrated"})

@@ -232,23 +232,56 @@ class Utilities:
 
 
     async def send_log(self, m: types.Message, chat: bool = False) -> None:
-        if chat:
-            user = m.from_user
-            return await app.send_message(
-                chat_id=app.logger,
-                text=m.lang["log_chat"].format(
-                    m.chat.id,
-                    m.chat.title,
-                    user.id if user else 0,
-                    user.mention if user else "Anonymous",
-                ),
-            )
+        try:
+            logger_id = getattr(app, "logger", None) or getattr(config, "LOGGER_ID", None)
+            if not logger_id:
+                return
 
-        await app.send_message(
-            chat_id=app.logger,
-            text=m.lang["log_user"].format(
-                m.from_user.id,
-                f"@{m.from_user.username}",
-                m.from_user.mention,
-            ),
-        )
+            if chat:
+                user = m.from_user
+                text = (
+                    f"<u><b>New Group Log</b></u>\n\n"
+                    f"<b>Chat ID:</b> <code>{m.chat.id}</code>\n"
+                    f"<b>Title:</b> {m.chat.title}\n"
+                    f"<b>Started By:</b> {user.mention if user else 'Anonymous'} (<code>{user.id if user else 0}</code>)"
+                )
+                if hasattr(m, "lang") and "log_chat" in m.lang:
+                    try:
+                        text = m.lang["log_chat"].format(
+                            m.chat.id,
+                            m.chat.title,
+                            user.id if user else 0,
+                            user.mention if user else "Anonymous",
+                        )
+                    except Exception:
+                        pass
+                return await app.send_message(
+                    chat_id=logger_id,
+                    text=text,
+                )
+
+            u = m.from_user
+            if not u:
+                return
+            uname = f"@{u.username}" if u.username else "No Username"
+            text = (
+                f"<u><b>New User Start Log</b></u>\n\n"
+                f"<b>User ID:</b> <code>{u.id}</code>\n"
+                f"<b>Username:</b> {uname}\n"
+                f"<b>Name:</b> {u.mention}"
+            )
+            if hasattr(m, "lang") and "log_user" in m.lang:
+                try:
+                    text = m.lang["log_user"].format(
+                        u.id,
+                        uname,
+                        u.mention,
+                    )
+                except Exception:
+                    pass
+            await app.send_message(
+                chat_id=logger_id,
+                text=text,
+            )
+        except Exception as e:
+            logger.warning("send_log to log group failed: %s", e)

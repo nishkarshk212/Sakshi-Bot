@@ -119,13 +119,15 @@ async def start(client, message: types.Message):
 
     b_id = getattr(client, "id", None) or getattr(getattr(client, "me", None), "id", None)
     if private:
-        await db.add_user(message.from_user.id, bot_id=b_id)
-        if not await db.is_user(message.from_user.id):
+        is_new = not await db.is_user(message.from_user.id)
+        if is_new:
             await utils.send_log(message)
+        await db.add_user(message.from_user.id, bot_id=b_id)
     else:
-        await db.add_chat(message.chat.id, message.chat.title, bot_id=b_id)
-        if not await db.is_chat(message.chat.id):
+        is_new = not await db.is_chat(message.chat.id)
+        if is_new:
             await utils.send_log(message, True)
+        await db.add_chat(message.chat.id, message.chat.title, bot_id=b_id)
 
 
 
