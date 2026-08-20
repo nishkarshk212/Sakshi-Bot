@@ -33,11 +33,18 @@ SMOOTH_MAP = {
 }
 
 
+is_font_transform_enabled = True
+
+
 def apply_smooth_to_text(plain_text: str) -> str:
+    if not is_font_transform_enabled:
+        return plain_text
     return "".join(SMOOTH_MAP.get(c, c) for c in plain_text)
 
 
 def to_smooth_font(html_text: str) -> str:
+    if not is_font_transform_enabled:
+        return html_text
     if not html_text or not isinstance(html_text, str):
         return html_text
     pattern = re.compile(r"(<code>.*?</code>|<pre>.*?</pre>|<[^>]+>|https?://[^\s<\"]+)", re.DOTALL | re.IGNORECASE)
@@ -60,6 +67,8 @@ def to_smooth_font(html_text: str) -> str:
 
 def patch_inline_keyboard(reply_markup):
     """Optionally apply smooth font to button labels if reply_markup is an InlineKeyboardMarkup."""
+    if not is_font_transform_enabled:
+        return reply_markup
     if not reply_markup or not isinstance(reply_markup, InlineKeyboardMarkup):
         return reply_markup
     try:
