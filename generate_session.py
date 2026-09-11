@@ -25,7 +25,7 @@ async def generate():
         print(f"  Using API_HASH: {api_hash}")
 
     print("\n  Starting Telegram client — you will receive an OTP...\n")
-    async with Client(":memory:", api_id=api_id, api_hash=api_hash) as app:
+    async with Client(name="generate_session", api_id=api_id, api_hash=api_hash, in_memory=True) as app:
         session_str = await app.export_session_string()
         print()
         print("╔══════════════════════════════════════════════════╗")
