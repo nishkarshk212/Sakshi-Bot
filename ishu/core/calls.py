@@ -379,7 +379,7 @@ class TgCall(PyTgCalls):
             await self.play_next(chat_id)
         except exceptions.NoActiveGroupCall:
             await self.stop(chat_id)
-            await message.edit_text(_lang["error_no_call"])
+            await message.edit_text("ʙᴀʙᴜ ᴛᴀɴɪ ᴠᴏɪᴄᴇ ᴄʜᴀᴛ ᴄʜᴀʟᴜ ᴋᴀʀ")
         except exceptions.NoAudioSourceFound:
             await message.edit_text(_lang["error_no_audio"])
             await self.play_next(chat_id)
