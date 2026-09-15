@@ -231,7 +231,7 @@ class TgCall(PyTgCalls):
                         if media.video
                         else types.MediaStream.Flags.IGNORE
                     ),
-                    ffmpeg_parameters=f"-ss {seek_time}" if seek_time > 1 else None,
+                    ffmpeg_parameters=(f"-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -probesize 128k -analyzeduration 100000" + (f" -ss {seek_time}" if seek_time > 1 else "")) if str(media_path).startswith("http") else (f"-ss {seek_time}" if seek_time > 1 else None),
                 )
                 await client.play(
                     chat_id=chat_id,
@@ -287,7 +287,7 @@ class TgCall(PyTgCalls):
                         if media.video
                         else types.MediaStream.Flags.IGNORE
                     ),
-                    ffmpeg_parameters=f"-ss {seek_time}" if seek_time > 1 else None,
+                    ffmpeg_parameters=(f"-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -probesize 128k -analyzeduration 100000" + (f" -ss {seek_time}" if seek_time > 1 else "")) if str(media_path).startswith("http") else (f"-ss {seek_time}" if seek_time > 1 else None),
                 )
                 pyro_client = get_pyro_client(client)
                 try:
