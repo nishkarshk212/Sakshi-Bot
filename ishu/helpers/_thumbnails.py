@@ -1,245 +1,261 @@
-# Copyright (c) 2025 TheHamkerAlone 
+# Copyright (c) 2025 AnonymousX1025
 # Licensed under the MIT License.
-# This file is part of AloneX
+# This file is part of AnonXMusic
+
 
 import os
-import asyncio
 import aiohttp
-from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps
-from ishu import config
-from ishu.helpers import Track
+from PIL import (Image, ImageDraw, ImageFont, ImageOps)
 
 try:
-    from unidecode import unidecode
+    from ishu import config, logger
+    from ishu.helpers import Track
 except ImportError:
-    def unidecode(text):
-        return text
+    from anony import config, logger
+    from anony.helpers import Track
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FONT_TITLE_PATH = os.path.join(BASE_DIR, "font.ttf")
-FONT_INFO_PATH = os.path.join(BASE_DIR, "font2.ttf")
+PKG_DIR = os.path.dirname(BASE_DIR)
+ASSETS_DIR = os.path.join(PKG_DIR, "assets")
 
-
-def safe_font(path, size):
-    try:
-        return ImageFont.truetype(path, size)
-    except Exception:
-        return ImageFont.load_default()
+TITANIC_TEMPLATE = os.path.join(ASSETS_DIR, "titanic_thumb.jpg")
+FONT_RALEWAY = os.path.join(BASE_DIR, "Raleway-Bold.ttf")
+FONT_HINDI = os.path.join(BASE_DIR, "NotoSansDevanagari-Bold.ttf")
 
 
 class Thumbnail:
     def __init__(self):
-        self.size = (1280, 720)
+        self.font1 = ImageFont.truetype(FONT_RALEWAY, 44) if os.path.exists(FONT_RALEWAY) else ImageFont.load_default()
+        self.font2 = ImageFont.truetype(FONT_RALEWAY, 20) if os.path.exists(FONT_RALEWAY) else ImageFont.load_default()
+        self.font_av = ImageFont.truetype(FONT_RALEWAY, 44) if os.path.exists(FONT_RALEWAY) else ImageFont.load_default()
+        if os.path.exists(FONT_HINDI):
+            self.font_hindi = ImageFont.truetype(FONT_HINDI, 38)
+        else:
+            self.font_hindi = self.font1
+        self.session: aiohttp.ClientSession | None = None
+        self.template_path = TITANIC_TEMPLATE
 
-    async def start(self):
-        os.makedirs("cache", exist_ok=True)
+    async def start(self) -> None:
+        if self.session is None or self.session.closed:
+            self.session = aiohttp.ClientSession()
 
-        if not os.path.exists(FONT_TITLE_PATH):
-            print(f"Missing font: {FONT_TITLE_PATH}")
-
-        if not os.path.exists(FONT_INFO_PATH):
-            print(f"Missing font: {FONT_INFO_PATH}")
-
-        return True
+    async def close(self) -> None:
+        if self.session and not self.session.closed:
+            await self.session.close()
 
     async def save_thumb(self, output_path: str, url: str) -> str:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        }
-        for attempt in range(3):
-            try:
-                if url.startswith("http"):
-                    async with aiohttp.ClientSession(headers=headers) as session:
-                        async with session.get(url, timeout=15) as resp:
-                            if resp.status == 200:
-                                content = await resp.read()
-                                with open(output_path, "wb") as f:
-                                    f.write(content)
-                                return output_path
-            except Exception as e:
-                if attempt == 2:
-                    print(f"Error saving thumb: {e}")
-                await asyncio.sleep(1)
+        if self.session is None or self.session.closed:
+            await self.start()
+        async with self.session.get(url) as resp:
+            with open(output_path, "wb") as f:
+                f.write(await resp.read())
         return output_path
 
-    async def generate(self, song: Track) -> str:
+    async def generate(self, song: Track, size=(1024, 576)) -> str:
         try:
             os.makedirs("cache", exist_ok=True)
+            user_suffix = str(song.user_id) if song.user_id else "anon"
+            output = f"cache/{song.id}_{user_suffix}.png"
+            if os.path.exists(output):
+                return output
+
+            if not os.path.exists(self.template_path):
+                return getattr(config, "DEFAULT_THUMB", None) or self.template_path
+
             temp = f"cache/temp_{song.id}.jpg"
-            final_path = f"cache/{song.id}.jpg"
-            if os.path.exists(final_path):
-                return final_path
-
-            await self.save_thumb(temp, song.thumbnail)
-            
-            try:
-                src = Image.open(temp).convert("RGBA")
-            except Exception:
+            has_thumb = False
+            if song.thumbnail:
                 try:
-                    src = Image.new("RGBA", (1280, 720), (30, 30, 30, 255))
-                except Exception:
-                    return config.DEFAULT_THUMB
+                    await self.save_thumb(temp, song.thumbnail)
+                    if os.path.exists(temp) and os.path.getsize(temp) > 0:
+                        has_thumb = True
+                except Exception as e:
+                    logger.warning(f"Could not download song thumbnail: {e}")
 
-            # Dynamic font loading for proper sizes
-            font_title = safe_font(FONT_TITLE_PATH, 34)
-            font_info = safe_font(FONT_INFO_PATH, 24)
-            font_time = safe_font(FONT_INFO_PATH, 20)
-            font_brand = safe_font(FONT_TITLE_PATH, 26)
-
-            W, H = self.size
-
-            # --- 1. DARK BLURRED BACKGROUND ---
-            # Crop source to 16:9 aspect ratio
-            bg_ratio = W / H
-            src_ratio = src.width / src.height
-            if src_ratio > bg_ratio:
-                new_w = int(src.height * bg_ratio)
-                offset = (src.width - new_w) // 2
-                bg = src.crop((offset, 0, offset + new_w, src.height))
-            else:
-                new_h = int(src.width / bg_ratio)
-                offset = (src.height - new_h) // 2
-                bg = src.crop((0, offset, src.width, offset + new_h))
-
-            bg = bg.resize((W, H), Image.Resampling.LANCZOS)
-            bg = bg.filter(ImageFilter.GaussianBlur(40))
-            bg = bg.convert("RGBA")
-            
-            # Dark overlay
-            bg_overlay = Image.new("RGBA", (W, H), (0, 0, 0, 140))
-            bg = Image.alpha_composite(bg, bg_overlay)
-
-            # --- 2. CARD COMPONENT ---
-            card_w, card_h = 900, 560
-            card_x = (W - card_w) // 2
-            card_y = (H - card_h) // 2 + 20  # Shift down slightly to balance brand header
-
-            # Draw soft drop shadow behind the card
-            shadow_layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-            shadow_draw = ImageDraw.Draw(shadow_layer)
-            shadow_draw.rounded_rectangle(
-                (card_x - 4, card_y + 8, card_x + card_w + 4, card_y + card_h + 12),
-                radius=40,
-                fill=(0, 0, 0, 110),
+            # Retrieve User Profile Picture
+            is_autoplay = getattr(song, "user", None) == "Autoplay"
+            user_avatar_path = (
+                f"cache/user_{song.user_id}.jpg"
+                if song.user_id
+                else "cache/user_autoplay.jpg" if is_autoplay
+                else None
             )
-            shadow_layer = shadow_layer.filter(ImageFilter.GaussianBlur(25))
-            bg = Image.alpha_composite(bg, shadow_layer)
+            has_user_pfp = False
+            if user_avatar_path and os.path.exists(user_avatar_path) and os.path.getsize(user_avatar_path) > 0:
+                has_user_pfp = True
+            elif is_autoplay or song.user_photo or song.user_id:
+                try:
+                    try:
+                        from ishu import app, userbot
+                    except ImportError:
+                        from anony import app, userbot
 
-            # Create Card Layer
-            card_img = Image.new("RGBA", (card_w, card_h), (245, 245, 245, 255))
-            card_draw = ImageDraw.Draw(card_img)
+                    if is_autoplay:
+                        # Try assistant profile picture first, then bot's profile picture
+                        pfp_clients = []
+                        if getattr(userbot, "clients", None):
+                            pfp_clients.extend(userbot.clients)
+                        pfp_clients.append(app)
 
-            # --- 3. INNER COVER IMAGE ---
-            cover_w, cover_h = 820, 320
-            cover_x, cover_y = 40, 40
-            cover_radius = 20
+                        for client in pfp_clients:
+                            try:
+                                async for photo in client.get_chat_photos("me", limit=1):
+                                    await client.download_media(photo.file_id, file_name=user_avatar_path)
+                                    if os.path.exists(user_avatar_path) and os.path.getsize(user_avatar_path) > 0:
+                                        has_user_pfp = True
+                                        break
+                                if has_user_pfp:
+                                    break
+                            except Exception:
+                                continue
+                    elif song.user_photo:
+                        await app.download_media(song.user_photo, file_name=user_avatar_path)
+                    elif song.user_id:
+                        async for photo in app.get_chat_photos(song.user_id, limit=1):
+                            await app.download_media(photo.file_id, file_name=user_avatar_path)
+                            break
+                    if user_avatar_path and os.path.exists(user_avatar_path) and os.path.getsize(user_avatar_path) > 0:
+                        has_user_pfp = True
+                except Exception as err:
+                    logger.warning(f"Could not download user avatar: {err}")
 
-            cover_resized = ImageOps.fit(src, (cover_w, cover_h), Image.Resampling.LANCZOS)
-            
-            # Create cover mask for rounded corners
-            cover_mask = Image.new("L", (cover_w, cover_h), 0)
-            ImageDraw.Draw(cover_mask).rounded_rectangle(
-                (0, 0, cover_w, cover_h), radius=cover_radius, fill=255
-            )
-            card_img.paste(cover_resized, (cover_x, cover_y), cover_mask)
+            base = Image.open(self.template_path).convert("RGBA")
+            draw = ImageDraw.Draw(base)
+            yellow = (255, 222, 3, 255)
 
-            # --- 4. DETAILS SECTION ---
-            # Title
-            title_text = unidecode(str(song.title))
-            def ellipsize(s, font, max_w):
-                bbox = card_draw.textbbox((0, 0), s, font=font)
-                if (bbox[2] - bbox[0]) <= max_w:
-                    return s
-                lo, hi = 1, len(s)
-                best = "…"
-                while lo <= hi:
-                    mid = (lo + hi) // 2
-                    cand = s[:mid].rstrip() + "…"
-                    bbox = card_draw.textbbox((0, 0), cand, font=font)
-                    if (bbox[2] - bbox[0]) <= max_w:
-                        best = cand
-                        lo = mid + 1
-                    else:
-                        hi = mid - 1
-                return best
+            # Clear title and avatar area
+            draw.rectangle((465, 230, 960, 385), fill=yellow)
 
-            title_str = ellipsize(title_text, font_title, 820)
-            title_y = 385
-            card_draw.text((40, title_y), title_str, fill=(20, 20, 20, 255), font=font_title)
+            # Clear duration: 5:29 -> dynamic duration
+            draw.rectangle((860, 408, 950, 438), fill=yellow)
 
-            # Subtitle (Channel name & views)
-            sub_text = song.channel_name or "YouTube"
-            if song.view_count:
-                sub_text += f"   ·   {song.view_count}"
-            subtitle_str = ellipsize(sub_text, font_info, 820)
-            subtitle_y = 435
-            card_draw.text((40, subtitle_y), subtitle_str, fill=(100, 100, 100, 255), font=font_info)
+            # Clear start time: 1:51 -> 0:00
+            draw.rectangle((465, 408, 520, 438), fill=yellow)
 
-            # --- 5. PROGRESS BAR ---
-            bar_x = 40
-            bar_y = 485
-            bar_w = 820
-            bar_h = 6
-            # Track
-            card_draw.rounded_rectangle(
-                (bar_x, bar_y, bar_x + bar_w, bar_y + bar_h),
-                radius=3,
-                fill=(220, 220, 220, 255)
-            )
-            # Filled (35% default for visual playback representation)
-            progress_pct = 0.35
-            fill_w = int(bar_w * progress_pct)
-            card_draw.rounded_rectangle(
-                (bar_x, bar_y, bar_x + fill_w, bar_y + bar_h),
-                radius=3,
-                fill=(229, 57, 53, 255)
-            )
-            # Slider thumb (red dot)
-            thumb_radius = 6
-            thumb_cx = bar_x + fill_w
-            thumb_cy = bar_y + (bar_h // 2)
-            card_draw.ellipse(
-                (thumb_cx - thumb_radius, thumb_cy - thumb_radius, thumb_cx + thumb_radius, thumb_cy + thumb_radius),
-                fill=(229, 57, 53, 255)
+            # Paste main song thumbnail on left box (88, 188)
+            if has_thumb:
+                try:
+                    raw_thumb = Image.open(temp).convert("RGBA")
+                    fitted = ImageOps.fit(
+                        raw_thumb, (342, 332), method=Image.Resampling.LANCZOS, centering=(0.5, 0.5)
+                    )
+                    mask = Image.new("L", (342 * 4, 332 * 4), 0)
+                    d_mask = ImageDraw.Draw(mask)
+                    d_mask.rounded_rectangle((0, 0, 342 * 4, 332 * 4), radius=32 * 4, fill=255)
+                    mask = mask.resize((342, 332), Image.Resampling.LANCZOS)
+                    base.paste(fitted, (88, 188), mask)
+                except Exception as err:
+                    logger.warning(f"Failed pasting song cover: {err}")
+                finally:
+                    if os.path.exists(temp):
+                        try:
+                            os.remove(temp)
+                        except Exception:
+                            pass
+
+            # Paste User Profile Picture in enlarged box at (827, 245)
+            box_size = (110, 110)
+            radius = 22
+            border = 4
+            container = Image.new("RGBA", box_size, (0, 0, 0, 0))
+            c_draw = ImageDraw.Draw(container)
+            c_draw.rounded_rectangle(
+                (0, 0, box_size[0], box_size[1]),
+                radius=radius,
+                fill=(255, 255, 255, 255),
             )
 
-            # Timestamps
-            time_y = 505
-            card_draw.text((40, time_y), "0:00", fill=(100, 100, 100, 255), font=font_time)
-            
-            duration_str = song.duration or "00:00"
-            dur_bbox = card_draw.textbbox((0, 0), duration_str, font=font_time)
-            dur_w = dur_bbox[2] - dur_bbox[0]
-            card_draw.text((40 + 820 - dur_w, time_y), duration_str, fill=(100, 100, 100, 255), font=font_time)
+            inner_w = box_size[0] - border * 2
+            inner_h = box_size[1] - border * 2
 
-            # --- 6. RED BOTTOM STRIP ---
-            card_draw.rectangle(
-                (0, card_h - 8, card_w, card_h),
-                fill=(229, 57, 53, 255)
-            )
+            if has_user_pfp:
+                try:
+                    pfp_img = Image.open(user_avatar_path).convert("RGBA")
+                    fitted_pfp = ImageOps.fit(
+                        pfp_img, (inner_w, inner_h), method=Image.Resampling.LANCZOS
+                    )
+                    inner_mask = Image.new("L", (inner_w, inner_h), 0)
+                    m_draw = ImageDraw.Draw(inner_mask)
+                    m_draw.rounded_rectangle(
+                        (0, 0, inner_w, inner_h), radius=radius - 2, fill=255
+                    )
+                    container.paste(fitted_pfp, (border, border), inner_mask)
+                except Exception as err:
+                    logger.warning(f"Failed processing user pfp image: {err}")
+                    has_user_pfp = False
 
-            # Paste Card onto Background with Rounded Corners Mask
-            card_mask = Image.new("L", (card_w, card_h), 0)
-            ImageDraw.Draw(card_mask).rounded_rectangle(
-                (0, 0, card_w, card_h), radius=35, fill=255
-            )
-            
-            bg.paste(card_img, (card_x, card_y), card_mask)
+            if not has_user_pfp:
+                # Elegant fallback badge with user initial
+                fallback_av = Image.new("RGBA", (inner_w, inner_h), (40, 40, 45, 255))
+                f_draw = ImageDraw.Draw(fallback_av)
+                raw_user_str = str(song.user or "U")
+                # Remove HTML tags or mention symbols
+                clean_name = "".join(
+                    c for c in raw_user_str if c.isalnum() or c.isspace()
+                ).strip()
+                initial = clean_name[0].upper() if clean_name else "U"
+                bbox = f_draw.textbbox((0, 0), initial, font=self.font_av)
+                tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+                f_draw.text(
+                    ((inner_w - tw) // 2, (inner_h - th) // 2 - 4),
+                    initial,
+                    font=self.font_av,
+                    fill=(255, 222, 3, 255),
+                )
+                inner_mask = Image.new("L", (inner_w, inner_h), 0)
+                m_draw = ImageDraw.Draw(inner_mask)
+                m_draw.rounded_rectangle(
+                    (0, 0, inner_w, inner_h), radius=radius - 2, fill=255
+                )
+                container.paste(fallback_av, (border, border), inner_mask)
 
-            # Save final image
-            out = bg.convert("RGB")
-            out.save(final_path, "JPEG", quality=92, optimize=True)
+            base.paste(container, (827, 245), container)
 
-            try:
-                if os.path.exists(temp):
-                    os.remove(temp)
-            except Exception:
-                pass
+            # Draw Title (support Hindi/Devanagari & Latin in large font size)
+            title = song.title or "Unknown Track"
+            is_hindi = any("\u0900" <= c <= "\u097f" for c in title)
+            title_font = self.font_hindi if is_hindi else self.font1
+            max_w = 345
 
-            return final_path
+            words = title.split()
+            lines = []
+            curr = ""
+            for w in words:
+                test_line = f"{curr} {w}".strip()
+                if draw.textlength(test_line, font=title_font) <= max_w:
+                    curr = test_line
+                else:
+                    if curr:
+                        lines.append(curr)
+                    curr = w
+            if curr:
+                lines.append(curr)
 
-        except Exception as e:
-            print(f"Error generating thumbnail: {e}")
-            import traceback
-            traceback.print_exc()
-            return config.DEFAULT_THUMB
+            if len(lines) > 2:
+                lines = lines[:2]
+                last = lines[-1]
+                while (
+                    draw.textlength(last + "...", font=title_font) > max_w
+                    and len(last) > 1
+                ):
+                    last = last[:-1]
+                lines[-1] = last + "..."
+
+            y_text = 275 if len(lines) == 1 else 248
+            line_height = 46 if is_hindi else 52
+            for line in lines:
+                draw.text((472, y_text), line, font=title_font, fill=(20, 20, 20, 255))
+                y_text += line_height
+
+            # Draw start time 0:00
+            draw.text((472, 414), "0:00", font=self.font2, fill=(20, 20, 20, 255))
+
+            # Draw Duration
+            duration = str(song.duration or "03:00")
+            draw.text((880, 414), duration, font=self.font2, fill=(20, 20, 20, 255))
+
+            base.save(output, format="PNG")
+            return output
+        except Exception as err:
+            logger.error(f"Thumbnail generation error: {err}")
+            return self.template_path
