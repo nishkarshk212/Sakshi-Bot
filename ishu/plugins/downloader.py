@@ -26,7 +26,7 @@ async def song_downloader(_, m: types.Message):
     if not query:
         return await m.reply_text("<b>Please provide a song name or YouTube link!</b>")
 
-    status_msg = await m.reply_text("<b>Searching for song...</b>", quote=True)
+    status_msg = await m.reply_text("<b>Searching for song...</b>")
 
     try:
         title, duration_min, duration_sec, thumbnail, vidid = await yt.details(query)
@@ -60,7 +60,6 @@ async def song_downloader(_, m: types.Message):
             performer="YouTube",
             duration=duration_sec,
             thumb=thumb_path if (thumb_path and os.path.exists(thumb_path)) else None,
-            quote=True,
         )
         await status_msg.delete()
 
@@ -96,7 +95,7 @@ async def video_downloader(_, m: types.Message):
     if not query:
         return await m.reply_text("<b>Please provide a video name or YouTube link!</b>")
 
-    status_msg = await m.reply_text("<b>Searching for video...</b>", quote=True)
+    status_msg = await m.reply_text("<b>Searching for video...</b>")
 
     try:
         title, duration_min, duration_sec, thumbnail, vidid = await yt.details(query)
@@ -128,7 +127,6 @@ async def video_downloader(_, m: types.Message):
             caption=caption,
             duration=duration_sec,
             thumb=thumb_path if (thumb_path and os.path.exists(thumb_path)) else None,
-            quote=True,
         )
         await status_msg.delete()
 
@@ -164,7 +162,7 @@ async def insta_downloader(_, m: types.Message):
     if not link or "instagram.com" not in link:
         return await m.reply_text("<b>Please provide a valid Instagram link!</b>")
 
-    status_msg = await m.reply_text("<b>Downloading Instagram Reel...</b>", quote=True)
+    status_msg = await m.reply_text("<b>Downloading Instagram Reel...</b>")
 
     try:
         file_path, title = await download_instagram_reel(link)
@@ -177,7 +175,6 @@ async def insta_downloader(_, m: types.Message):
         await m.reply_video(
             video=file_path,
             caption=caption,
-            quote=True,
         )
         await status_msg.delete()
 

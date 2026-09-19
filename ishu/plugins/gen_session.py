@@ -27,7 +27,7 @@ async def gen_session_command(client, message: types.Message):
         "<b>Example:</b> <code>+919876543210</code>\n\n"
         "<i>To cancel at any time, send <code>/cancel</code>.</i>"
     )
-    await message.reply_text(text, parse_mode=enums.ParseMode.HTML, quote=True)
+    await message.reply_text(text, parse_mode=enums.ParseMode.HTML)
 
 
 @app.on_message(filters.command(["cancel"]) & filters.private)
@@ -41,9 +41,9 @@ async def cancel_gen_session(client, message: types.Message):
                 await temp_client.disconnect()
             except Exception:
                 pass
-        await message.reply_text(" Session generation process cancelled.", quote=True)
+        await message.reply_text(" Session generation process cancelled.")
     else:
-        await message.reply_text("No active session generation process found.", quote=True)
+        await message.reply_text("No active session generation process found.")
 
 
 @app.on_message(filters.private & ~filters.command(["gensession", "gen_session", "session", "cancel", "start"]) & ~app.bl_users)
@@ -67,21 +67,21 @@ async def handle_gen_session_input(client, message: types.Message):
             await temp_client.connect()
         except Exception as e:
             gen_state.pop(user_id, None)
-            return await message.reply_text(f" Failed to initialize Telegram client: {e}", quote=True)
+            return await message.reply_text(f" Failed to initialize Telegram client: {e}")
 
         try:
             code_info = await temp_client.send_code(phone_number)
         except PhoneNumberInvalid:
             await temp_client.disconnect()
-            return await message.reply_text(" Invalid phone number! Please enter with country code (e.g. +919876543210).", quote=True)
+            return await message.reply_text(" Invalid phone number! Please enter with country code (e.g. +919876543210).")
         except ApiIdInvalid:
             await temp_client.disconnect()
             gen_state.pop(user_id, None)
-            return await message.reply_text(" API_ID or API_HASH invalid.", quote=True)
+            return await message.reply_text(" API_ID or API_HASH invalid.")
         except Exception as e:
             await temp_client.disconnect()
             gen_state.pop(user_id, None)
-            return await message.reply_text(f" Failed to send OTP code: {e}", quote=True)
+            return await message.reply_text(f" Failed to send OTP code: {e}")
 
         state["step"] = "code"
         state["phone_number"] = phone_number
@@ -93,7 +93,7 @@ async def handle_gen_session_input(client, message: types.Message):
             f"<b>Step 2/3:</b> Enter the OTP confirmation code sent to <code>{phone_number}</code> via Telegram app.\n\n"
             "<b>Format:</b> Send code as numbers spaced or plain (e.g., <code>1 2 3 4 5</code> or <code>12345</code>)."
         )
-        await message.reply_text(text, parse_mode=enums.ParseMode.HTML, quote=True)
+        await message.reply_text(text, parse_mode=enums.ParseMode.HTML)
 
     elif step == "code":
         raw_code = message.text.strip().replace(" ", "").replace("-", "")
@@ -112,7 +112,7 @@ async def handle_gen_session_input(client, message: types.Message):
                 f"<code>{session_str}</code>\n\n"
                 " <b>Keep this session string private! Anyone with this string can access your Telegram account.</b>"
             )
-            await message.reply_text(text, parse_mode=enums.ParseMode.HTML, quote=True)
+            await message.reply_text(text, parse_mode=enums.ParseMode.HTML)
 
         except SessionPasswordNeeded:
             state["step"] = "password"
@@ -120,15 +120,15 @@ async def handle_gen_session_input(client, message: types.Message):
                 "<b> 2-Step Verification Enabled!</b>\n\n"
                 "<b>Step 3/3:</b> Please enter your Telegram 2FA Password to complete authentication."
             )
-            await message.reply_text(text, parse_mode=enums.ParseMode.HTML, quote=True)
+            await message.reply_text(text, parse_mode=enums.ParseMode.HTML)
 
         except (PhoneCodeInvalid, PhoneCodeExpired):
-            await message.reply_text(" Invalid or expired OTP code. Please try again or re-send `/gensession`.", quote=True)
+            await message.reply_text(" Invalid or expired OTP code. Please try again or re-send `/gensession`.")
 
         except Exception as e:
             await temp_client.disconnect()
             gen_state.pop(user_id, None)
-            await message.reply_text(f" Authentication failed: {e}", quote=True)
+            await message.reply_text(f" Authentication failed: {e}")
 
     elif step == "password":
         password = message.text.strip()
@@ -145,12 +145,12 @@ async def handle_gen_session_input(client, message: types.Message):
                 f"<code>{session_str}</code>\n\n"
                 " <b>Keep this session string private! Anyone with this string can access your Telegram account.</b>"
             )
-            await message.reply_text(text, parse_mode=enums.ParseMode.HTML, quote=True)
+            await message.reply_text(text, parse_mode=enums.ParseMode.HTML)
 
         except PasswordHashInvalid:
-            await message.reply_text(" Invalid 2FA password! Please enter the correct password.", quote=True)
+            await message.reply_text(" Invalid 2FA password! Please enter the correct password.")
 
         except Exception as e:
             await temp_client.disconnect()
             gen_state.pop(user_id, None)
-            await message.reply_text(f" Authentication failed: {e}", quote=True)
+            await message.reply_text(f" Authentication failed: {e}")

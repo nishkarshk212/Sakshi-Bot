@@ -272,7 +272,6 @@ async def support_command(_, m: types.Message):
         f"Join our official support community & channel below for updates and help!",
         parse_mode=enums.ParseMode.HTML,
         reply_markup=markup,
-        quote=True,
     )
 
 
@@ -285,7 +284,6 @@ async def channel_command(_, m: types.Message):
         f"<b>Official Support Channel:</b>\n{config.SUPPORT_CHANNEL}",
         parse_mode=enums.ParseMode.HTML,
         reply_markup=markup,
-        quote=True,
     )
 
 
@@ -298,5 +296,4 @@ async def chat_command(_, m: types.Message):
         f"<b>Official Support Group:</b>\n{config.SUPPORT_CHAT}",
         parse_mode=enums.ParseMode.HTML,
         reply_markup=markup,
-        quote=True,
     )

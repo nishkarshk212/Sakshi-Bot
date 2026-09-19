@@ -208,7 +208,6 @@ async def usage_handler(_, m: types.Message) -> None:
     await m.reply_text(
         text=text,
         reply_markup=_usage_keyboard("stats"),
-        quote=True,
         parse_mode=enums.ParseMode.HTML,
         disable_web_page_preview=True,
     )

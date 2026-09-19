@@ -173,6 +173,12 @@ class TgCall(PyTgCalls):
 
     async def stop(self, chat_id: int) -> None:
         client = await db.get_assistant(chat_id)
+        prev_msg_id = _playing_messages.pop(chat_id, None)
+        if prev_msg_id:
+            try:
+                await app.delete_messages(chat_id=chat_id, message_ids=prev_msg_id, revoke=True)
+            except Exception:
+                pass
 
         # Clean up files for all media items in queue
         q_items = queue.get_queue(chat_id)
